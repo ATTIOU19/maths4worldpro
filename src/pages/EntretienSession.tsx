@@ -131,6 +131,14 @@ const EntretienSession = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Speech recognition
+  const { isListening, interim, isSupported, toggle: toggleMic } = useSpeechRecognition({
+    lang: config?.langue || "fr",
+    onResult: (transcript) => {
+      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+    },
+  });
+
   useEffect(() => {
     if (!config) navigate("/entretien-vocal");
   }, [config, navigate]);
