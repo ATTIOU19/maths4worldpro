@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { Send, Clock, X, CheckCircle2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/Navbar";
+import { toast } from "@/hooks/use-toast";
 
-interface Message {
-  role: "user" | "ai";
+interface ChatMessage {
+  role: "user" | "assistant";
   content: string;
 }
 
@@ -16,56 +17,96 @@ interface InterviewConfig {
   langue: string;
 }
 
-// Simulated AI responses based on interview phase
-const getAIResponse = (
-  messages: Message[],
-  config: InterviewConfig,
-  timeLeft: number
-): string => {
-  const aiCount = messages.filter((m) => m.role === "ai").length;
-  const langLabel = config.langue === "fr" ? "français" : config.langue;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/entretien-chat`;
 
-  // Phase 1: Greeting
-  if (aiCount === 0) {
-    return `Bonjour ! 👋 Je suis **Amara**, votre tuteur IA pour cet entretien sur **${config.notion}** (niveau ${config.niveau}).\n\nAvant de commencer, pourriez-vous me dire :\n- Quels sont vos **objectifs** pour cet entretien ?\n- Y a-t-il des points spécifiques que vous souhaitez approfondir ?`;
+async function streamChat({
+  messages,
+  config,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  messages: ChatMessage[];
+  config: InterviewConfig;
+  onDelta: (text: string) => void;
+  onDone: () => void;
+  onError: (err: string) => void;
+}) {
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages, config }),
+  });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({ error: "Erreur réseau" }));
+    onError(data.error || `Erreur ${resp.status}`);
+    return;
   }
 
-  // Phase 2: After objectives, start questions
-  if (aiCount === 1) {
-    return `Merci pour ces précisions ! C'est un excellent point de départ. 🎯\n\nCommençons notre entretien. Voici ma première question :\n\n**Question 1** : Pouvez-vous me donner la définition de **${config.notion}** en mathématiques et expliquer pourquoi c'est un concept important ?`;
+  if (!resp.body) {
+    onError("Pas de réponse du serveur");
+    return;
   }
 
-  if (aiCount === 2) {
-    return `Bonne réponse ! ✅ Vous avez bien cerné l'essentiel.\n\n**💡 Amélioration** : Essayez d'inclure un exemple concret pour illustrer votre définition. Par exemple, si on parle de dérivées, montrer comment la vitesse instantanée d'un véhicule est une application directe.\n\n**Question 2** : Pouvez-vous me donner les **formules principales** liées à ${config.notion} et expliquer quand on les utilise ?`;
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = "";
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || line.trim() === "") continue;
+      if (!line.startsWith("data: ")) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") {
+        streamDone = true;
+        break;
+      }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        textBuffer = line + "\n" + textBuffer;
+        break;
+      }
+    }
   }
 
-  if (aiCount === 3) {
-    return `Très bien ! Vous connaissez les formules de base. 👍\n\n**💡 Amélioration** : N'oubliez pas de mentionner les **cas particuliers** et les **conditions d'application**. C'est souvent ce qui fait la différence au BAC.\n\n**Question 3** : Résolvez cet exercice pratique : *Soit f(x) = 2x³ - 3x² + x - 5. Calculez f'(x) et déterminez les extremums locaux.*`;
+  // Final flush
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split("\n")) {
+      if (!raw) continue;
+      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+      if (raw.startsWith(":") || raw.trim() === "") continue;
+      if (!raw.startsWith("data: ")) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
   }
 
-  if (aiCount === 4) {
-    return `Bon travail sur cet exercice ! 🧮\n\n**💡 Amélioration** : Pensez à toujours vérifier vos calculs en substituant les valeurs trouvées dans l'équation originale. Cela permet d'éviter les erreurs d'étourderie.\n\n**Question 4** : Dans quel **contexte réel** au Bénin ou en Afrique de l'Ouest pourrait-on appliquer ${config.notion} ? Donnez un exemple concret.`;
-  }
-
-  if (aiCount === 5) {
-    return `Excellente réflexion ! Relier les maths au quotidien est essentiel. 🌍\n\n**💡 Amélioration** : Essayez de quantifier votre exemple avec des chiffres réels pour montrer la puissance du concept.\n\n**Question 5** : Quelles sont les **erreurs courantes** que font les élèves sur ${config.notion} et comment les éviter ?`;
-  }
-
-  // End of interview - generate summary
-  if (timeLeft < 60 || aiCount >= 6) {
-    return generateSummary(config, messages);
-  }
-
-  return `Bonne réponse ! Continuons.\n\n**Question ${aiCount}** : Pouvez-vous approfondir un autre aspect de ${config.notion} ?`;
-};
-
-const generateSummary = (config: InterviewConfig, messages: Message[]): string => {
-  const userMessages = messages.filter((m) => m.role === "user");
-  const totalResponses = userMessages.length;
-  const score = Math.min(18, Math.max(8, 10 + totalResponses * 1.5));
-
-  return `## 📋 Résumé de l'entretien\n\n---\n\n### 📝 Informations\n- **Sujet** : ${config.notion}\n- **Niveau** : ${config.niveau}\n- **Questions posées** : ${Math.min(totalResponses, 6)}\n- **Réponses fournies** : ${totalResponses}\n\n---\n\n### 🎯 Note globale : **${score.toFixed(1)} / 20**\n\n---\n\n### ✅ Points forts\n- Bonne compréhension des concepts de base\n- Capacité à relier la théorie à la pratique\n- Réponses structurées et claires\n\n### ⚠️ Pistes d'amélioration\n1. **Précision des formules** : Toujours vérifier les conditions d'application\n2. **Exemples concrets** : Illustrer chaque concept avec un exemple chiffré\n3. **Cas particuliers** : Ne pas oublier les exceptions et limites\n4. **Contextualisation** : Relier davantage aux problèmes du programme béninois\n\n---\n\n### 📚 Ressources recommandées\n- Revoir le chapitre sur ${config.notion} dans votre manuel\n- Faire les exercices types du BAC des 3 dernières années\n- Pratiquer avec des problèmes contextualisés\n\n---\n\n*Entretien terminé — Généré par MATHS4WORLD IA ✓*`;
-};
+  onDone();
+}
 
 const formatTime = (seconds: number) => {
   const m = Math.floor(seconds / 60);
@@ -78,25 +119,24 @@ const EntretienSession = () => {
   const navigate = useNavigate();
   const config = (location.state as InterviewConfig) || null;
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Display messages (with "ai" role for rendering)
+  const [displayMessages, setDisplayMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
+  // API messages history
+  const apiMessagesRef = useRef<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 min
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
   const [isFinished, setIsFinished] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Redirect if no config
   useEffect(() => {
-    if (!config) {
-      navigate("/entretien-vocal");
-    }
+    if (!config) navigate("/entretien-vocal");
   }, [config, navigate]);
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [displayMessages]);
 
   // Timer
   useEffect(() => {
@@ -113,66 +153,115 @@ const EntretienSession = () => {
     return () => clearInterval(interval);
   }, [isFinished]);
 
-  // End when time is up
-  useEffect(() => {
-    if (timeLeft === 0 && !isFinished && config) {
-      setIsFinished(true);
-      simulateAI(generateSummary(config, messages));
-    }
-  }, [timeLeft]);
+  // Send AI request with streaming
+  const sendToAI = useCallback(
+    (msgs: ChatMessage[], endAfter = false) => {
+      if (!config) return;
+      setIsStreaming(true);
 
-  // Initial AI greeting
+      // Add instruction if ending
+      const finalMsgs = endAfter
+        ? [
+            ...msgs,
+            {
+              role: "user" as const,
+              content:
+                "L'entretien est terminé. Génère maintenant le résumé complet avec la note sur 20, les points forts, pistes d'amélioration et ressources.",
+            },
+          ]
+        : msgs;
+
+      let assistantSoFar = "";
+
+      streamChat({
+        messages: finalMsgs,
+        config,
+        onDelta: (chunk) => {
+          assistantSoFar += chunk;
+          setDisplayMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "ai") {
+              return prev.map((m, i) =>
+                i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
+              );
+            }
+            return [...prev, { role: "ai", content: assistantSoFar }];
+          });
+        },
+        onDone: () => {
+          // Save to API history
+          apiMessagesRef.current = [
+            ...msgs,
+            { role: "assistant", content: assistantSoFar },
+          ];
+          setIsStreaming(false);
+          if (endAfter) setIsFinished(true);
+        },
+        onError: (err) => {
+          toast({ title: "Erreur", description: err, variant: "destructive" });
+          setIsStreaming(false);
+        },
+      });
+    },
+    [config]
+  );
+
+  // Initial greeting
   useEffect(() => {
-    if (config && messages.length === 0) {
-      const greeting = getAIResponse([], config, timeLeft);
-      simulateAI(greeting);
+    if (config && displayMessages.length === 0) {
+      sendToAI([]);
     }
   }, [config]);
 
-  const simulateAI = useCallback((text: string) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: "ai", content: text }]);
-      setIsTyping(false);
-    }, 1200);
-  }, []);
+  // End when time is up
+  useEffect(() => {
+    if (timeLeft === 0 && !isFinished && !isStreaming && config) {
+      sendToAI(apiMessagesRef.current, true);
+    }
+  }, [timeLeft]);
 
   const handleSend = () => {
-    if (!input.trim() || isTyping || isFinished || !config) return;
+    if (!input.trim() || isStreaming || isFinished || !config) return;
 
-    const userMsg: Message = { role: "user", content: input.trim() };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    const userText = input.trim();
     setInput("");
 
-    // Check if we should end
-    const aiCount = updatedMessages.filter((m) => m.role === "ai").length;
-    if (aiCount >= 6 || timeLeft < 60) {
-      setIsFinished(true);
-      simulateAI(generateSummary(config, updatedMessages));
-    } else {
-      const response = getAIResponse(updatedMessages, config, timeLeft);
-      simulateAI(response);
-    }
+    // Add to display
+    setDisplayMessages((prev) => [...prev, { role: "user", content: userText }]);
 
+    // Add to API history
+    const updatedApiMsgs: ChatMessage[] = [
+      ...apiMessagesRef.current,
+      { role: "user", content: userText },
+    ];
+
+    // Check if we should end (count AI messages)
+    const aiCount = displayMessages.filter((m) => m.role === "ai").length;
+    const shouldEnd = aiCount >= 6 || timeLeft < 60;
+
+    sendToAI(updatedApiMsgs, shouldEnd);
     inputRef.current?.focus();
   };
 
   const handleEndEarly = () => {
-    if (!config) return;
-    setIsFinished(true);
-    simulateAI(generateSummary(config, messages));
+    if (!config || isStreaming) return;
+    sendToAI(apiMessagesRef.current, true);
   };
 
   if (!config) return null;
 
-  const timerColor = timeLeft < 300 ? "text-destructive" : timeLeft < 600 ? "text-accent" : "text-muted-foreground";
+  const timerColor =
+    timeLeft < 300
+      ? "text-destructive"
+      : timeLeft < 600
+      ? "text-accent"
+      : "text-muted-foreground";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="pt-16 flex-1 flex flex-col">
-        {/* Header bar */}
+        {/* Header */}
         <div className="border-b border-border bg-card px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
@@ -197,7 +286,8 @@ const EntretienSession = () => {
             {!isFinished && (
               <button
                 onClick={handleEndEarly}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+                disabled={isStreaming}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50"
               >
                 <X size={12} />
                 Terminer
@@ -208,7 +298,7 @@ const EntretienSession = () => {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl mx-auto w-full">
-          {messages.map((msg, i) => (
+          {displayMessages.map((msg, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 8 }}
@@ -237,7 +327,7 @@ const EntretienSession = () => {
             </motion.div>
           ))}
 
-          {isTyping && (
+          {isStreaming && displayMessages[displayMessages.length - 1]?.role !== "ai" && (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
                 <span className="text-accent-foreground text-xs font-bold">A</span>
@@ -250,7 +340,7 @@ const EntretienSession = () => {
             </div>
           )}
 
-          {isFinished && messages.length > 0 && messages[messages.length - 1].role === "ai" && (
+          {isFinished && displayMessages.length > 0 && displayMessages[displayMessages.length - 1].role === "ai" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -281,12 +371,12 @@ const EntretienSession = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Tapez votre réponse..."
-                disabled={isTyping}
+                disabled={isStreaming}
                 className="flex-1 px-4 py-2.5 rounded-full bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 transition-all"
               />
               <button
                 onClick={handleSend}
-                disabled={!input.trim() || isTyping}
+                disabled={!input.trim() || isStreaming}
                 className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-50"
               >
                 <Send size={16} className="text-secondary-foreground" />
