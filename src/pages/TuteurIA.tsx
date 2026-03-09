@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Send, Mic, Sparkles, BookOpen } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Send, Mic, Sparkles, BookOpen, ArrowRight } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, ReferenceLine,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import Navbar from "@/components/Navbar";
 
-// Generate chart data for f(x) = x³ - 2x + 1 and f'(x) = 3x² - 2
 const chartData = Array.from({ length: 61 }, (_, i) => {
   const x = (i - 30) / 10;
   return {
@@ -22,32 +21,73 @@ interface ChatMessage {
   time: string;
 }
 
-const demoConversation: ChatMessage[] = [
-  { role: "user", text: "Bonjour ! Je veux comprendre comment calculer la dérivée de f(x) = x³ - 2x + 1", time: "14:02" },
-  { role: "ai", text: "Bonjour ! Je suis là pour vous guider. Avant de calculer, dites-moi : connaissez-vous la règle de dérivation des monômes ? Par exemple, si g(x) = xⁿ, que vaut g'(x) ?", time: "14:02" },
-  { role: "user", text: "Je crois que c'est n fois x puissance n-1 ?", time: "14:03" },
-  { role: "ai", text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
-  { role: "user", text: "Pour x³ ça donne 3x² et pour -2x ça donne -2, et la constante 1 donne 0 ?", time: "14:04" },
-  { role: "ai", text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. J'ai généré le graphique de f(x) et f'(x) sur votre droite, avec une application en contexte béninois. Observez comment les zones où f'(x) > 0 correspondent aux portions croissantes de f(x).", time: "14:04" },
+// Each step: AI asks, then user responds (with a suggested response)
+const conversationSteps: { ai: ChatMessage; user: ChatMessage; suggestedInput: string }[] = [
+  {
+    ai: { role: "ai", text: "Bonjour ! Je suis Amara, votre tuteur IA. Avant de commencer, dites-moi : connaissez-vous la règle de dérivation des monômes ? Par exemple, si g(x) = xⁿ, que vaut g'(x) ?", time: "14:02" },
+    user: { role: "user", text: "Je crois que c'est n fois x puissance n-1 ?", time: "14:03" },
+    suggestedInput: "Je crois que c'est n fois x puissance n-1 ?",
+  },
+  {
+    ai: { role: "ai", text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
+    user: { role: "user", text: "Pour x³ ça donne 3x² et pour -2x ça donne -2, et la constante 1 donne 0 ?", time: "14:04" },
+    suggestedInput: "Pour x³ ça donne 3x² et pour -2x ça donne -2, et la constante 1 donne 0 ?",
+  },
+  {
+    ai: { role: "ai", text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
+    user: { role: "user", text: "Oui ! Quand la dérivée est positive, la fonction monte.", time: "14:05" },
+    suggestedInput: "Oui ! Quand la dérivée est positive, la fonction monte.",
+  },
 ];
 
 const TuteurIA = () => {
+  const [step, setStep] = useState(0); // current step in conversation
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [showChart, setShowChart] = useState(false);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [started, setStarted] = useState(false);
 
-  useEffect(() => {
-    // Progressive message display
-    let timeout: ReturnType<typeof setTimeout>;
-    demoConversation.forEach((msg, i) => {
-      timeout = setTimeout(() => {
-        setMessages((prev) => [...prev, msg]);
-        if (i === demoConversation.length - 1) {
-          setTimeout(() => setShowChart(true), 500);
-        }
-      }, i * 800 + 400);
-    });
-    return () => clearTimeout(timeout);
-  }, []);
+  const showChart = step >= 2;
+
+  const startConversation = () => {
+    setStarted(true);
+    setIsTyping(true);
+    // Show first AI message after a brief delay
+    setTimeout(() => {
+      setMessages([conversationSteps[0].ai]);
+      setIsTyping(false);
+      setInput(conversationSteps[0].suggestedInput);
+    }, 1000);
+  };
+
+  const handleSend = () => {
+    if (isTyping || step >= conversationSteps.length) return;
+
+    const currentStep = conversationSteps[step];
+    const userMsg: ChatMessage = {
+      role: "user",
+      text: input.trim() || currentStep.suggestedInput,
+      time: currentStep.user.time,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setIsTyping(true);
+
+    const nextStep = step + 1;
+    setStep(nextStep);
+
+    // Show next AI response after delay
+    setTimeout(() => {
+      if (nextStep < conversationSteps.length) {
+        setMessages((prev) => [...prev, conversationSteps[nextStep].ai]);
+        setInput(conversationSteps[nextStep].suggestedInput);
+      }
+      setIsTyping(false);
+    }, 1200);
+  };
+
+  const isConversationDone = step >= conversationSteps.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -91,42 +131,82 @@ const TuteurIA = () => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {messages.map((msg, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "ai" && (
-                  <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center mr-2 mt-1 shrink-0">
-                    <span className="text-accent-foreground text-xs font-bold">A</span>
+            {!started ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-4">
+                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Sparkles size={28} className="text-accent" />
+                </div>
+                <h3 className="text-lg font-bold text-card-foreground">Démo interactive</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Découvrez comment Amara vous guide pas à pas pour comprendre la dérivation. Cliquez pour commencer !
+                </p>
+                <button
+                  onClick={startConversation}
+                  className="flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-hero"
+                >
+                  Commencer la démo
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <AnimatePresence>
+                  {messages.map((msg, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      {msg.role === "ai" && (
+                        <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center mr-2 mt-1 shrink-0">
+                          <span className="text-accent-foreground text-xs font-bold">A</span>
+                        </div>
+                      )}
+                      <div className={`max-w-[85%] ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"} px-4 py-3 shadow-sm`}>
+                        <p className="text-sm leading-relaxed">{msg.text}</p>
+                        <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
+                          <span className={`text-[10px] ${msg.role === "user" ? "text-primary-foreground/50" : "text-muted-foreground"}`}>
+                            {msg.time}
+                          </span>
+                          {msg.role === "user" && <span className="text-[10px] text-primary-foreground/50">✓✓</span>}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {isTyping && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
+                      <span className="text-accent-foreground text-xs font-bold">A</span>
+                    </div>
+                    <div className="chat-bubble-ai px-4 py-3 flex gap-1">
+                      <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
+                      <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
+                      <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
+                    </div>
                   </div>
                 )}
-                <div className={`max-w-[85%] ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"} px-4 py-3 shadow-sm`}>
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
-                  <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
-                    <span className={`text-[10px] ${msg.role === "user" ? "text-primary-foreground/50" : "text-muted-foreground"}`}>
-                      {msg.time}
-                    </span>
-                    {msg.role === "user" && <span className="text-[10px] text-primary-foreground/50">✓✓</span>}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
 
-            {messages.length < demoConversation.length && (
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
-                  <span className="text-accent-foreground text-xs font-bold">A</span>
-                </div>
-                <div className="chat-bubble-ai px-4 py-3 flex gap-1">
-                  <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
-                  <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
-                  <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
-                </div>
-              </div>
+                {isConversationDone && !isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-4"
+                  >
+                    <p className="text-xs text-muted-foreground mb-3">✅ Démo terminée ! Essayez un vrai entretien.</p>
+                    <a
+                      href="/entretien-vocal"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:brightness-110 transition-all"
+                    >
+                      Lancer un entretien vocal
+                      <ArrowRight size={14} />
+                    </a>
+                  </motion.div>
+                )}
+              </>
             )}
           </div>
 
@@ -135,13 +215,21 @@ const TuteurIA = () => {
             <div className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 shadow-sm">
               <input
                 type="text"
-                placeholder="Pose ta question en mathématiques..."
-                className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={!started ? "Cliquez sur « Commencer la démo »" : isConversationDone ? "Démo terminée" : "Tapez votre réponse..."}
+                disabled={!started || isTyping || isConversationDone}
+                className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground disabled:opacity-50"
               />
               <button className="relative w-9 h-9 rounded-full bg-accent flex items-center justify-center mic-pulse">
                 <Mic size={16} className="text-accent-foreground" />
               </button>
-              <button className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all">
+              <button
+                onClick={handleSend}
+                disabled={!started || isTyping || isConversationDone || !input.trim()}
+                className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-50"
+              >
                 <Send size={16} className="text-secondary-foreground" />
               </button>
             </div>
@@ -164,7 +252,6 @@ const TuteurIA = () => {
                 transition={{ duration: 0.6 }}
                 className="space-y-6"
               >
-                {/* Chart */}
                 <div className="bg-card rounded-2xl p-6 shadow-card">
                   <h3 className="text-sm font-semibold text-card-foreground mb-4">
                     f(x) = x³ - 2x + 1 et sa dérivée f'(x) = 3x² - 2
@@ -185,38 +272,21 @@ const TuteurIA = () => {
                       <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <ReferenceLine x={0} stroke="hsl(210 10% 70%)" strokeDasharray="4 4" />
                       <ReferenceLine y={0} stroke="hsl(210 10% 70%)" strokeDasharray="4 4" />
-                      <Line
-                        type="monotone"
-                        dataKey="f(x)"
-                        stroke="#2E86C1"
-                        strokeWidth={3}
-                        dot={false}
-                        activeDot={{ r: 5, fill: "#2E86C1" }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="f'(x)"
-                        stroke="#E67E22"
-                        strokeWidth={2.5}
-                        strokeDasharray="6 3"
-                        dot={false}
-                        activeDot={{ r: 5, fill: "#E67E22" }}
-                      />
+                      <Line type="monotone" dataKey="f(x)" stroke="#2E86C1" strokeWidth={3} dot={false} activeDot={{ r: 5, fill: "#2E86C1" }} />
+                      <Line type="monotone" dataKey="f'(x)" stroke="#E67E22" strokeWidth={2.5} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#E67E22" }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
 
-                {/* African context card */}
                 <div className="bg-card rounded-2xl p-6 shadow-card border-l-4 border-accent">
                   <h4 className="text-sm font-bold text-card-foreground mb-2 flex items-center gap-2">
                     🌍 Application en contexte africain
                   </h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Un commerçant au marché Dantokpa (Cotonou) stocke q(x) = x³ - 2x + 1 tonnes de mil selon le prix x (en milliers de FCFA). La dérivée q'(x) = 3x² - 2 indique la vitesse de variation de son stock. À x = 1, q'(1) = 1 {">"} 0 : son stock augmente. C'est le principe de la dérivée appliqué au commerce béninois.
+                    Un commerçant au marché Dantokpa (Cotonou) stocke q(x) = x³ - 2x + 1 tonnes de mil selon le prix x (en milliers de FCFA). La dérivée q'(x) = 3x² - 2 indique la vitesse de variation de son stock. À x = 1, q'(1) = 1 {">"} 0 : son stock augmente.
                   </p>
                 </div>
 
-                {/* Programme badge */}
                 <div className="bg-card rounded-2xl p-5 shadow-card flex items-center gap-3">
                   <BookOpen size={20} className="text-secondary" />
                   <div>
@@ -231,7 +301,7 @@ const TuteurIA = () => {
               </motion.div>
             ) : (
               <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-                En attente de la conversation...
+                {started ? "Continuez la conversation pour voir le graphique..." : "Lancez la démo pour commencer"}
               </div>
             )}
           </div>
