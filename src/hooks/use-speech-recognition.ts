@@ -1,11 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-// Extend Window for webkit prefix
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
+interface SpeechRecognitionType extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: Event & { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
 }
 
 interface UseSpeechRecognitionOptions {
@@ -14,27 +18,31 @@ interface UseSpeechRecognitionOptions {
   onEnd?: () => void;
 }
 
-// Map our langue codes to BCP-47 for Web Speech API
 const langMap: Record<string, string> = {
   fr: "fr-FR",
   en: "en-US",
-  fon: "fr-FR", // fallback
+  fon: "fr-FR",
   yoruba: "yo-NG",
 };
+
+function getSR(): (new () => SpeechRecognitionType) | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
 
 export function useSpeechRecognition({ lang = "fr", onResult, onEnd }: UseSpeechRecognitionOptions = {}) {
   const [isListening, setIsListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [isSupported, setIsSupported] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
 
   useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    setIsSupported(!!SR);
+    setIsSupported(!!getSR());
   }, []);
 
   const start = useCallback(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SR = getSR();
     if (!SR) return;
 
     const recognition = new SR();
@@ -65,7 +73,7 @@ export function useSpeechRecognition({ lang = "fr", onResult, onEnd }: UseSpeech
     };
 
     recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
+      console.error("Speech recognition error:", (event as any).error);
       setIsListening(false);
       setInterim("");
     };
@@ -88,11 +96,8 @@ export function useSpeechRecognition({ lang = "fr", onResult, onEnd }: UseSpeech
   }, []);
 
   const toggle = useCallback(() => {
-    if (isListening) {
-      stop();
-    } else {
-      start();
-    }
+    if (isListening) stop();
+    else start();
   }, [isListening, start, stop]);
 
   return { isListening, interim, isSupported, start, stop, toggle };
