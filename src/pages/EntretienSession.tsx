@@ -372,24 +372,47 @@ const EntretienSession = () => {
         {/* Input */}
         {!isFinished && (
           <div className="border-t border-border bg-card px-4 py-3">
-            <div className="max-w-3xl mx-auto flex items-center gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Tapez votre réponse..."
-                disabled={isStreaming}
-                className="flex-1 px-4 py-2.5 rounded-full bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 transition-all"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isStreaming}
-                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-50"
-              >
-                <Send size={16} className="text-secondary-foreground" />
-              </button>
+            <div className="max-w-3xl mx-auto flex flex-col gap-2">
+              {/* Interim voice transcript */}
+              {isListening && interim && (
+                <p className="text-xs text-muted-foreground italic px-2">
+                  🎙️ {interim}...
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                {/* Mic button */}
+                {isSupported && (
+                  <button
+                    onClick={toggleMic}
+                    disabled={isStreaming}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50 ${
+                      isListening
+                        ? "bg-destructive text-destructive-foreground mic-pulse"
+                        : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                    title={isListening ? "Arrêter le micro" : "Parler"}
+                  >
+                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                  </button>
+                )}
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder={isListening ? "Parlez maintenant..." : "Tapez ou utilisez le micro..."}
+                  disabled={isStreaming}
+                  className="flex-1 px-4 py-2.5 rounded-full bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 transition-all"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isStreaming}
+                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-50"
+                >
+                  <Send size={16} className="text-secondary-foreground" />
+                </button>
+              </div>
             </div>
           </div>
         )}
