@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Send, Clock, X, CheckCircle2 } from "lucide-react";
+import { Send, Clock, X, CheckCircle2, Mic, MicOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/Navbar";
 import { toast } from "@/hooks/use-toast";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 
 interface ChatMessage {
   role: "user" | "assistant";
