@@ -11,6 +11,7 @@ import EntretienSetup from "./pages/EntretienSetup";
 import EntretienSession from "./pages/EntretienSession";
 import Inscription from "./pages/Inscription";
 import Connexion from "./pages/Connexion";
+import ChatIA from "./pages/ChatIA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/entretien-vocal/session" element={<EntretienSession />} />
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/connexion" element={<Connexion />} />
+          <Route path="/chat" element={<ChatIA />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
