@@ -9,6 +9,8 @@ import MathsMetier from "./pages/MathsMetier";
 import APropos from "./pages/APropos";
 import EntretienSetup from "./pages/EntretienSetup";
 import EntretienSession from "./pages/EntretienSession";
+import Inscription from "./pages/Inscription";
+import Connexion from "./pages/Connexion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
