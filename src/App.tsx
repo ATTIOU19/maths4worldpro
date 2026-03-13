@@ -9,6 +9,8 @@ import MathsMetier from "./pages/MathsMetier";
 import APropos from "./pages/APropos";
 import EntretienSetup from "./pages/EntretienSetup";
 import EntretienSession from "./pages/EntretienSession";
+import Inscription from "./pages/Inscription";
+import Connexion from "./pages/Connexion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/a-propos" element={<APropos />} />
           <Route path="/entretien-vocal" element={<EntretienSetup />} />
           <Route path="/entretien-vocal/session" element={<EntretienSession />} />
+          <Route path="/inscription" element={<Inscription />} />
+          <Route path="/connexion" element={<Connexion />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
