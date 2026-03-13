@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
   { label: "Accueil", to: "/" },
+  { label: "Chat IA", to: "/chat" },
   { label: "Tuteur IA", to: "/tuteur-ia" },
   { label: "Entretien Vocal", to: "/entretien-vocal" },
   { label: "Maths Métier", to: "/maths-metier" },
