@@ -11,6 +11,7 @@ import EntretienSetup from "./pages/EntretienSetup";
 import EntretienSession from "./pages/EntretienSession";
 import Inscription from "./pages/Inscription";
 import Connexion from "./pages/Connexion";
+import ChatIA from "./pages/ChatIA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
