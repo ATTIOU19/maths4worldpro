@@ -88,11 +88,18 @@ const Navbar = () => {
                 </Link>
               ))}
               <Link
-                to="/tuteur-ia"
+                to="/connexion"
                 onClick={() => setMobileOpen(false)}
-                className="mt-2 px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
+                className="mt-2 px-5 py-3 border border-primary-foreground/20 text-primary-foreground rounded-lg text-sm font-semibold text-center"
               >
-                Commencer gratuitement
+                Connexion
+              </Link>
+              <Link
+                to="/inscription"
+                onClick={() => setMobileOpen(false)}
+                className="px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
+              >
+                S'inscrire
               </Link>
             </div>
           </motion.div>

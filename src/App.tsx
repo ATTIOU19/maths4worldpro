@@ -28,6 +28,8 @@ const App = () => (
           <Route path="/a-propos" element={<APropos />} />
           <Route path="/entretien-vocal" element={<EntretienSetup />} />
           <Route path="/entretien-vocal/session" element={<EntretienSession />} />
+          <Route path="/inscription" element={<Inscription />} />
+          <Route path="/connexion" element={<Connexion />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
