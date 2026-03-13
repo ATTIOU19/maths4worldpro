@@ -41,12 +41,18 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-2">
           <Link
-            to="/tuteur-ia"
+            to="/connexion"
+            className="px-4 py-2 text-primary-foreground/80 hover:text-primary-foreground text-sm font-medium transition-colors"
+          >
+            Connexion
+          </Link>
+          <Link
+            to="/inscription"
             className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:brightness-110 transition-all duration-200 shadow-hero"
           >
-            Commencer gratuitement
+            S'inscrire
           </Link>
         </div>
 
