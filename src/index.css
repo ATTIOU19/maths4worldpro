@@ -126,6 +126,69 @@
   border-left: 3px solid hsl(204 68% 47%);
 }
 
+/* Markdown prose overrides inside chat bubbles */
+.chat-bubble-ai .prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+
+.chat-bubble-ai .prose th,
+.chat-bubble-ai .prose td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.4rem 0.75rem;
+  text-align: center;
+}
+
+.chat-bubble-ai .prose th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+}
+
+.chat-bubble-ai .prose pre {
+  background: hsl(210 25% 95%);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre;
+  font-family: 'Courier New', monospace;
+  margin: 0.75rem 0;
+}
+
+.chat-bubble-ai .prose code:not(pre code) {
+  background: hsl(var(--muted));
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+
+.chat-bubble-ai .prose h2,
+.chat-bubble-ai .prose h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.chat-bubble-ai .prose hr {
+  border-color: hsl(var(--border));
+  margin: 0.75rem 0;
+}
+
+/* KaTeX overrides for proper display */
+.chat-bubble-ai .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  margin: 0.5rem 0;
+}
+
+.chat-bubble-ai .katex {
+  font-size: 1.05em;
+}
+
 /* Typing dots animation */
 @keyframes typing-bounce {
   0%, 60%, 100% { transform: translateY(0); }
