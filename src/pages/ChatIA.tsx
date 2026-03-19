@@ -3,10 +3,7 @@ import { Link } from "react-router-dom";
 import { Send, ArrowLeft, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -175,25 +172,7 @@ const ChatIA = () => {
           </div>
         ) : (
           messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[85%] md:max-w-[70%] px-4 py-3 ${
-                  msg.role === "user"
-                    ? "chat-bubble-user"
-                    : "chat-bubble-ai"
-                }`}
-              >
-                {msg.role === "assistant" ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {msg.content}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                )}
-              </div>
-            </div>
+            <MessageBubble key={i} msg={msg} />
           ))
         )}
 
