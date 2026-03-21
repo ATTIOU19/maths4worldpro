@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Send, Clock, X, CheckCircle2, Mic, MicOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mic, MicOff, Clock, X, CheckCircle2, Volume2, VolumeX, MessageSquare, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/Navbar";
 import { toast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -89,7 +90,6 @@ async function streamChat({
     }
   }
 
-  // Final flush
   if (textBuffer.trim()) {
     for (let raw of textBuffer.split("\n")) {
       if (!raw) continue;
@@ -120,32 +120,48 @@ const EntretienSession = () => {
   const navigate = useNavigate();
   const config = (location.state as InterviewConfig) || null;
 
-  // Display messages (with "ai" role for rendering)
   const [displayMessages, setDisplayMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
-  // API messages history
   const apiMessagesRef = useRef<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30 * 60);
   const [isFinished, setIsFinished] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [currentAiText, setCurrentAiText] = useState("");
+  const [userSaidText, setUserSaidText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const lastSpokenRef = useRef<string>("");
 
-  // Speech recognition
-  const { isListening, interim, isSupported, toggle: toggleMic } = useSpeechRecognition({
+  // Speech synthesis (AI speaks)
+  const { isSpeaking, speak, stop: stopSpeaking, isSupported: ttsSupported } = useSpeechSynthesis({
+    lang: config?.langue || "fr",
+    rate: 0.95,
+    onEnd: () => {
+      // Auto-start listening after AI finishes speaking
+      if (!isFinished && !isStreaming && sttSupported) {
+        startListening();
+      }
+    },
+  });
+
+  // Speech recognition (user speaks)
+  const {
+    isListening,
+    interim,
+    isSupported: sttSupported,
+    start: startListening,
+    stop: stopListening,
+    toggle: toggleMic,
+  } = useSpeechRecognition({
     lang: config?.langue || "fr",
     onResult: (transcript) => {
-      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+      setUserSaidText((prev) => (prev ? prev + " " + transcript : transcript));
     },
   });
 
   useEffect(() => {
     if (!config) navigate("/entretien-vocal");
   }, [config, navigate]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMessages]);
 
   // Timer
   useEffect(() => {
@@ -162,13 +178,25 @@ const EntretienSession = () => {
     return () => clearInterval(interval);
   }, [isFinished]);
 
+  // Speak AI response when streaming completes
+  useEffect(() => {
+    if (!isStreaming && displayMessages.length > 0) {
+      const last = displayMessages[displayMessages.length - 1];
+      if (last.role === "ai" && last.content && last.content !== lastSpokenRef.current && voiceEnabled && ttsSupported) {
+        lastSpokenRef.current = last.content;
+        speak(last.content);
+      }
+    }
+  }, [isStreaming, displayMessages, voiceEnabled, ttsSupported, speak]);
+
   // Send AI request with streaming
   const sendToAI = useCallback(
     (msgs: ChatMessage[], endAfter = false) => {
       if (!config) return;
       setIsStreaming(true);
+      stopSpeaking();
+      stopListening();
 
-      // Add instruction if ending
       const finalMsgs = endAfter
         ? [
             ...msgs,
@@ -187,6 +215,7 @@ const EntretienSession = () => {
         config,
         onDelta: (chunk) => {
           assistantSoFar += chunk;
+          setCurrentAiText(assistantSoFar);
           setDisplayMessages((prev) => {
             const last = prev[prev.length - 1];
             if (last?.role === "ai") {
@@ -198,7 +227,6 @@ const EntretienSession = () => {
           });
         },
         onDone: () => {
-          // Save to API history
           apiMessagesRef.current = [
             ...msgs,
             { role: "assistant", content: assistantSoFar },
@@ -212,7 +240,7 @@ const EntretienSession = () => {
         },
       });
     },
-    [config]
+    [config, stopSpeaking, stopListening]
   );
 
   // Initial greeting
@@ -229,31 +257,30 @@ const EntretienSession = () => {
     }
   }, [timeLeft]);
 
-  const handleSend = () => {
-    if (!input.trim() || isStreaming || isFinished || !config) return;
+  // Submit user's spoken answer
+  const handleSubmitVoice = useCallback(() => {
+    const text = userSaidText.trim();
+    if (!text || isStreaming || isFinished || !config) return;
 
-    const userText = input.trim();
-    setInput("");
+    stopListening();
+    setUserSaidText("");
+    setDisplayMessages((prev) => [...prev, { role: "user", content: text }]);
 
-    // Add to display
-    setDisplayMessages((prev) => [...prev, { role: "user", content: userText }]);
-
-    // Add to API history
     const updatedApiMsgs: ChatMessage[] = [
       ...apiMessagesRef.current,
-      { role: "user", content: userText },
+      { role: "user", content: text },
     ];
 
-    // Check if we should end (count AI messages)
     const aiCount = displayMessages.filter((m) => m.role === "ai").length;
     const shouldEnd = aiCount >= 6 || timeLeft < 60;
 
     sendToAI(updatedApiMsgs, shouldEnd);
-    inputRef.current?.focus();
-  };
+  }, [userSaidText, isStreaming, isFinished, config, stopListening, displayMessages, timeLeft, sendToAI]);
 
   const handleEndEarly = () => {
     if (!config || isStreaming) return;
+    stopSpeaking();
+    stopListening();
     sendToAI(apiMessagesRef.current, true);
   };
 
@@ -266,11 +293,25 @@ const EntretienSession = () => {
       ? "text-accent"
       : "text-muted-foreground";
 
+  // Voice status text
+  const getStatusText = () => {
+    if (isStreaming) return "Amara réfléchit...";
+    if (isSpeaking) return "Amara parle...";
+    if (isListening) return "À vous de parler...";
+    return "Appuyez sur le micro pour répondre";
+  };
+
+  const getStatusColor = () => {
+    if (isSpeaking) return "text-accent";
+    if (isListening) return "text-destructive";
+    return "text-muted-foreground";
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="pt-16 flex-1 flex flex-col">
-        {/* Header */}
+        {/* Top bar */}
         <div className="border-b border-border bg-card px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
@@ -278,20 +319,32 @@ const EntretienSession = () => {
             </div>
             <div>
               <p className="text-sm font-semibold text-card-foreground">
-                Entretien : {config.notion}
+                Entretien vocal : {config.notion}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.niveau} · {config.langue === "fr" ? "Français" : config.langue}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className={`flex items-center gap-1.5 ${timerColor}`}>
               <Clock size={14} />
-              <span className="text-sm font-mono font-semibold">
-                {formatTime(timeLeft)}
-              </span>
+              <span className="text-sm font-mono font-semibold">{formatTime(timeLeft)}</span>
             </div>
+            <button
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              title={voiceEnabled ? "Désactiver la voix" : "Activer la voix"}
+            >
+              {voiceEnabled ? <Volume2 size={16} className="text-accent" /> : <VolumeX size={16} className="text-muted-foreground" />}
+            </button>
+            <button
+              onClick={() => setShowTranscript(!showTranscript)}
+              className={`p-2 rounded-lg hover:bg-muted transition-colors ${showTranscript ? "bg-muted" : ""}`}
+              title="Voir la transcription"
+            >
+              <MessageSquare size={16} className={showTranscript ? "text-accent" : "text-muted-foreground"} />
+            </button>
             {!isFinished && (
               <button
                 onClick={handleEndEarly}
@@ -305,117 +358,171 @@ const EntretienSession = () => {
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl mx-auto w-full">
-          {displayMessages.map((msg, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {msg.role === "ai" && (
-                <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center mr-2 mt-1 shrink-0">
-                  <span className="text-accent-foreground text-xs font-bold">A</span>
-                </div>
-              )}
-              <div
-                className={`max-w-[85%] px-4 py-3 shadow-sm ${
-                  msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"
-                }`}
+        {/* Main voice interface */}
+        <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+          {/* Transcript panel (collapsible) */}
+          <AnimatePresence>
+            {showTranscript && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "40%", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute top-0 left-0 right-0 bg-card border-b border-border overflow-y-auto z-10"
               >
-                {msg.role === "ai" ? (
-                  <div className="prose prose-sm max-w-none text-sm leading-relaxed [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_hr]:my-3 [&_strong]:text-card-foreground [&_li]:text-muted-foreground [&_p]:text-card-foreground">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                <div className="px-4 py-3 space-y-3 max-w-3xl mx-auto">
+                  <div className="flex items-center justify-between sticky top-0 bg-card py-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transcription</p>
+                    <button onClick={() => setShowTranscript(false)}>
+                      <ChevronDown size={14} className="text-muted-foreground" />
+                    </button>
                   </div>
-                ) : (
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                )}
-              </div>
-            </motion.div>
-          ))}
+                  {displayMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-xl text-xs ${
+                        msg.role === "user"
+                          ? "bg-secondary text-secondary-foreground"
+                          : "bg-muted text-card-foreground"
+                      }`}>
+                        {msg.role === "ai" ? (
+                          <div className="prose prose-xs max-w-none">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p>{msg.content}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {isStreaming && displayMessages[displayMessages.length - 1]?.role !== "ai" && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
-                <span className="text-accent-foreground text-xs font-bold">A</span>
-              </div>
-              <div className="chat-bubble-ai px-4 py-3 flex gap-1">
-                <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
-                <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
-                <span className="typing-dot w-2 h-2 rounded-full bg-muted-foreground/50" />
-              </div>
-            </div>
-          )}
-
-          {isFinished && displayMessages.length > 0 && displayMessages[displayMessages.length - 1].role === "ai" && (
+          {/* Central voice UI */}
+          <div className="flex flex-col items-center gap-8">
+            {/* AI avatar with speaking animation */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="flex justify-center pt-4"
+              animate={isSpeaking ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+              transition={isSpeaking ? { repeat: Infinity, duration: 1.5 } : {}}
+              className="relative"
             >
-              <button
-                onClick={() => navigate("/entretien-vocal")}
-                className="flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-hero"
-              >
-                <CheckCircle2 size={16} />
-                Nouvel entretien
-              </button>
-            </motion.div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        {!isFinished && (
-          <div className="border-t border-border bg-card px-4 py-3">
-            <div className="max-w-3xl mx-auto flex flex-col gap-2">
-              {/* Interim voice transcript */}
-              {isListening && interim && (
-                <p className="text-xs text-muted-foreground italic px-2">
-                  🎙️ {interim}...
-                </p>
-              )}
-              <div className="flex items-center gap-2">
-                {/* Mic button */}
-                {isSupported && (
-                  <button
-                    onClick={toggleMic}
-                    disabled={isStreaming}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50 ${
-                      isListening
-                        ? "bg-destructive text-destructive-foreground mic-pulse"
-                        : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    }`}
-                    title={isListening ? "Arrêter le micro" : "Parler"}
-                  >
-                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                  </button>
-                )}
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder={isListening ? "Parlez maintenant..." : "Tapez ou utilisez le micro..."}
-                  disabled={isStreaming}
-                  className="flex-1 px-4 py-2.5 rounded-full bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 transition-all"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || isStreaming}
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-50"
-                >
-                  <Send size={16} className="text-secondary-foreground" />
-                </button>
+              <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
+                isSpeaking
+                  ? "bg-accent shadow-[0_0_40px_hsl(var(--accent)/0.4)]"
+                  : isStreaming
+                  ? "bg-muted animate-pulse"
+                  : "bg-accent/20"
+              }`}>
+                <span className="text-3xl font-bold text-accent-foreground">A</span>
               </div>
-            </div>
+              {/* Speaking ripples */}
+              {isSpeaking && (
+                <>
+                  <motion.div
+                    animate={{ scale: [1, 1.6], opacity: [0.4, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-full border-2 border-accent"
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 2], opacity: [0.3, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut", delay: 0.3 }}
+                    className="absolute inset-0 rounded-full border-2 border-accent"
+                  />
+                </>
+              )}
+            </motion.div>
+
+            {/* Status */}
+            <p className={`text-sm font-medium ${getStatusColor()} transition-colors`}>
+              {getStatusText()}
+            </p>
+
+            {/* Interim transcript (what user is saying) */}
+            {(isListening || userSaidText) && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-2xl px-6 py-3 max-w-md text-center"
+              >
+                <p className="text-sm text-card-foreground">
+                  {userSaidText}
+                  {interim && <span className="text-muted-foreground italic"> {interim}...</span>}
+                </p>
+              </motion.div>
+            )}
+
+            {/* Main action area */}
+            {!isFinished ? (
+              <div className="flex items-center gap-4">
+                {/* Mic button */}
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    if (isSpeaking) {
+                      stopSpeaking();
+                    }
+                    toggleMic();
+                  }}
+                  disabled={isStreaming}
+                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all disabled:opacity-50 ${
+                    isListening
+                      ? "bg-destructive text-destructive-foreground shadow-[0_0_30px_hsl(var(--destructive)/0.4)]"
+                      : "bg-secondary text-secondary-foreground hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)]"
+                  }`}
+                >
+                  {isListening ? <MicOff size={28} /> : <Mic size={28} />}
+                </motion.button>
+
+                {/* Send button (if user has spoken something) */}
+                {userSaidText.trim() && !isListening && (
+                  <motion.button
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    onClick={handleSubmitVoice}
+                    disabled={isStreaming}
+                    className="px-6 py-3 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50"
+                  >
+                    Envoyer
+                  </motion.button>
+                )}
+              </div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="flex flex-col items-center gap-4"
+              >
+                <p className="text-sm text-muted-foreground">Entretien terminé</p>
+                <button
+                  onClick={() => {
+                    setShowTranscript(true);
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-muted text-foreground rounded-xl text-sm font-medium hover:bg-muted/80 transition-all"
+                >
+                  <MessageSquare size={16} />
+                  Voir le résumé
+                </button>
+                <button
+                  onClick={() => navigate("/entretien-vocal")}
+                  className="flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-hero"
+                >
+                  <CheckCircle2 size={16} />
+                  Nouvel entretien
+                </button>
+              </motion.div>
+            )}
+
+            {/* Hint */}
+            {!isFinished && !isStreaming && !isSpeaking && !isListening && !userSaidText && (
+              <p className="text-xs text-muted-foreground/60 mt-4 text-center max-w-xs">
+                💡 Appuyez sur le micro pour parler. La transcription est disponible via l'icône 💬 en haut.
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
