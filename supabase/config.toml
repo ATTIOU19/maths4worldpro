@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.math-chat]
 verify_jwt = false
+
+[functions.visualize]
+verify_jwt = false
