@@ -16,11 +16,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `Tu es un assistant de visualisation mathématique expert. L'utilisateur te décrit ce qu'il veut visualiser (courbe, histogramme, aire, etc.) et tu dois répondre avec:
+    const systemPrompt = `Tu es un assistant de visualisation mathématique expert. L'utilisateur te décrit ce qu'il veut visualiser et tu dois répondre avec UNIQUEMENT deux éléments, rien d'autre :
 
-1. Un bloc \`\`\`chart avec les données JSON pour tracer le graphique interactif.
-2. Un tableau markdown récapitulatif avec les valeurs clés, propriétés et détails importants.
-3. Une brève explication des caractéristiques visibles sur le graphique.
+1. **UN bloc \`\`\`chart** avec les données JSON pour tracer le graphique interactif.
+2. **UN tableau markdown** récapitulatif des propriétés mathématiques.
+
+**NE DONNE AUCUNE EXPLICATION TEXTUELLE.** Pas de phrase d'introduction, pas de commentaire, pas de conclusion. UNIQUEMENT le graphique et le tableau.
 
 **FORMAT DU BLOC CHART (OBLIGATOIRE) :**
 \`\`\`chart
@@ -29,31 +30,35 @@ serve(async (req) => {
   "title": "Titre du graphique",
   "xLabel": "x",
   "yLabel": "f(x)",
-  "data": [{"x": -3, "y": 9}, {"x": -2, "y": 4}, ...],
+  "data": [{"x": -3, "y": 9}, {"x": -2, "y": 4}],
   "series": [{"key": "y", "name": "f(x) = x²"}]
 }
 \`\`\`
 
 Types disponibles : "line" (courbes), "bar" (barres), "area" (aires).
-Pour plusieurs courbes, utilise plusieurs clés dans data et series.
 
 **RÈGLES CRITIQUES :**
-- Génère TOUJOURS au moins 15-20 points de données pour des courbes lisses.
-- Pour les fonctions, calcule les vraies valeurs numériques (pas d'approximation).
-- Utilise le format LaTeX pour les formules : $...$ en ligne, $$...$$ en bloc.
-- Le tableau markdown DOIT inclure : domaine, image, asymptotes, points remarquables, monotonie, limites.
+- Génère TOUJOURS au moins 20 points de données pour des courbes lisses.
+- Calcule les vraies valeurs numériques.
+- Utilise LaTeX dans le tableau : $...$ en ligne.
+- Le tableau DOIT inclure : fonction, domaine, image, asymptotes, points remarquables, monotonie, limites, parité si applicable.
 - Réponds TOUJOURS en français.
-- Utilise des emojis pour rendre vivant.
-- CHAQUE réponse doit contenir au minimum UN bloc \`\`\`chart\`\`\` et UN tableau markdown.
+- AUCUN texte en dehors du bloc chart et du tableau.
 
-**Exemple de tableau attendu :**
+**Exemple de réponse complète attendue :**
+
+\`\`\`chart
+{"type":"line","title":"f(x) = x²","data":[{"x":-3,"y":9},{"x":0,"y":0},{"x":3,"y":9}],"series":[{"key":"y","name":"f(x) = x²"}]}
+\`\`\`
+
 | Propriété | Valeur |
 |-----------|--------|
-| Fonction | $f(x) = e^{x^2}$ |
+| Fonction | $f(x) = x^2$ |
 | Domaine | $\\mathbb{R}$ |
-| Image | $[1, +\\infty[$ |
-| Minimum | $(0, 1)$ |
+| Image | $[0, +\\infty[$ |
+| Minimum | $(0, 0)$ |
 | Parité | Paire |
+| Monotonie | Décroissante sur $]-\\infty, 0]$, croissante sur $[0, +\\infty[$ |
 | Limites | $\\lim_{x \\to \\pm\\infty} f(x) = +\\infty$ |`;
 
     const response = await fetch(
