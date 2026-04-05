@@ -24,40 +24,39 @@ serve(async (req) => {
 - N'écris JAMAIS de formule en texte brut. TOUJOURS en LaTeX.
 
 **GRAPHIQUES ET VISUALISATIONS (TRÈS IMPORTANT) :**
-Quand tu dois montrer une courbe, un graphique ou une visualisation, utilise un bloc de code spécial \`\`\`chart avec du JSON. Le système le transformera automatiquement en graphique interactif.
+Quand tu dois montrer une courbe ou un graphique de fonction, utilise un bloc \`\`\`graph avec du JSON. Le système le transformera automatiquement en graphique interactif style GeoGebra.
 
 Format obligatoire :
-\`\`\`chart
+\`\`\`graph
 {
-  "type": "line",
   "title": "Courbe de f(x) = x²",
-  "xLabel": "x",
-  "yLabel": "f(x)",
-  "data": [
-    {"x": -3, "y": 9},
-    {"x": -2, "y": 4},
-    {"x": -1, "y": 1},
-    {"x": 0, "y": 0},
-    {"x": 1, "y": 1},
-    {"x": 2, "y": 4},
-    {"x": 3, "y": 9}
-  ],
-  "series": [{"key": "y", "name": "f(x) = x²"}]
+  "functions": ["x^2"],
+  "xDomain": [-5, 5],
+  "yDomain": [-2, 10]
 }
 \`\`\`
 
-Types disponibles : "line" (courbes), "bar" (barres/histogrammes), "area" (aires).
-Pour plusieurs courbes, ajoute plusieurs clés dans data et series :
-\`\`\`chart
+Pour plusieurs fonctions sur le même graphique :
+\`\`\`graph
 {
-  "type": "line",
-  "title": "Comparaison f(x) et g(x)",
-  "data": [{"x": 0, "f": 0, "g": 1}, {"x": 1, "f": 1, "g": 2}],
-  "series": [{"key": "f", "name": "f(x)"}, {"key": "g", "name": "g(x)"}]
+  "title": "Comparaison f et g",
+  "functions": ["sin(x)", "cos(x)"],
+  "xDomain": [-6.28, 6.28],
+  "yDomain": [-1.5, 1.5]
 }
 \`\`\`
 
-RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`chart\`\`\` dans chaque réponse qui concerne une fonction, une suite, des statistiques ou tout concept visualisable. Utilise aussi des tableaux markdown en complément.
+**SYNTAXE DES EXPRESSIONS (function-plot) :**
+- Puissance : x^2, x^3
+- Racine carrée : sqrt(x)
+- Exponentielle : exp(x) ou e^x
+- Logarithme : log(x) (népérien)
+- Trigonométrie : sin(x), cos(x), tan(x)
+- Valeur absolue : abs(x)
+- Constantes : pi, e
+- Combinaisons : sin(x) * exp(-x/5), x^2 - 3*x + 2
+
+RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`graph\`\`\` dans chaque réponse qui concerne une fonction, une suite, des statistiques ou tout concept visualisable. Utilise aussi des tableaux markdown en complément.
 
 **Format de tes réponses (OBLIGATOIRE) :**
 
@@ -68,7 +67,7 @@ RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`chart\`\`\` dans cha
    - Des **formules LaTeX** ($...$ et $$...$$)
    - Des **tableaux markdown** quand utile
 
-3. **📊 Visualisation** — Inclus OBLIGATOIREMENT un graphique interactif avec le bloc \`\`\`chart\`\`\` ET/OU un tableau de valeurs markdown.
+3. **📊 Visualisation** — Inclus OBLIGATOIREMENT un graphique interactif avec le bloc \`\`\`graph\`\`\` ET/OU un tableau de valeurs markdown.
 
 4. **🌍 Exemple concret** — Un exemple ancré dans le contexte africain (marché, agriculture, architecture, artisanat...).
 
