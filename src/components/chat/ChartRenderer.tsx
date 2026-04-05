@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+
+/* ── Types ── */
 
 type ChartData = {
   type: "line" | "bar" | "area";
@@ -13,6 +15,22 @@ type ChartData = {
   series: { key: string; color?: string; name?: string }[];
 };
 
+type GraphData = {
+  title?: string;
+  functions: string[];
+  xDomain?: [number, number];
+  yDomain?: [number, number];
+};
+
+type ParsedPart = {
+  before: string;
+  chart: ChartData | null;
+  graph: GraphData | null;
+  after: string;
+};
+
+/* ── Colors ── */
+
 const COLORS = [
   "hsl(204, 68%, 47%)",
   "hsl(191, 83%, 32%)",
@@ -22,32 +40,105 @@ const COLORS = [
   "hsl(340, 65%, 50%)",
 ];
 
-export function parseChartBlocks(text: string): { before: string; chart: ChartData | null; after: string }[] {
-  const regex = /```chart\s*\n([\s\S]*?)\n```/g;
-  const parts: { before: string; chart: ChartData | null; after: string }[] = [];
+/* ── Parsing ── */
+
+export function parseChartBlocks(text: string): ParsedPart[] {
+  const regex = /```(?:chart|graph)\s*\n([\s\S]*?)\n```/g;
+  const parts: ParsedPart[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
     const before = text.slice(lastIndex, match.index);
+    const blockType = match[0].startsWith("```graph") ? "graph" : "chart";
     try {
-      const chart = JSON.parse(match[1]) as ChartData;
-      parts.push({ before, chart, after: "" });
+      const parsed = JSON.parse(match[1]);
+      if (blockType === "graph" || parsed.functions) {
+        parts.push({ before, chart: null, graph: parsed as GraphData, after: "" });
+      } else {
+        parts.push({ before, chart: parsed as ChartData, graph: null, after: "" });
+      }
     } catch {
-      parts.push({ before: before + match[0], chart: null, after: "" });
+      parts.push({ before: before + match[0], chart: null, graph: null, after: "" });
     }
     lastIndex = match.index + match[0].length;
   }
 
   const remaining = text.slice(lastIndex);
   if (parts.length === 0) {
-    parts.push({ before: remaining, chart: null, after: "" });
+    parts.push({ before: remaining, chart: null, graph: null, after: "" });
   } else {
     parts[parts.length - 1].after = remaining;
   }
 
   return parts;
 }
+
+/* ── Function Plot (GeoGebra-style) ── */
+
+export function FunctionPlotBlock({ graph }: { graph: GraphData }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !graph.functions?.length) return;
+
+    // Dynamic import to avoid SSR issues
+    import("function-plot").then((mod) => {
+      const functionPlot = mod.default;
+      if (!containerRef.current) return;
+
+      // Clear previous render
+      containerRef.current.innerHTML = "";
+
+      const colors = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c", "#0891b2"];
+
+      try {
+        functionPlot({
+          target: containerRef.current,
+          width: containerRef.current.clientWidth,
+          height: 340,
+          xAxis: {
+            label: "x",
+            domain: graph.xDomain || [-10, 10],
+          },
+          yAxis: {
+            label: "y",
+            domain: graph.yDomain || [-10, 10],
+          },
+          grid: true,
+          data: graph.functions.map((fn, i) => ({
+            fn,
+            color: colors[i % colors.length],
+            graphType: "polyline" as const,
+          })),
+        });
+      } catch (err) {
+        console.error("function-plot error:", err);
+        containerRef.current.innerHTML = `<p style="color:red;font-size:0.85rem;padding:1rem;">Erreur de tracé : expression invalide</p>`;
+      }
+    });
+  }, [graph]);
+
+  return (
+    <div className="my-4 p-4 rounded-xl border border-border bg-background">
+      {graph.title && (
+        <h4 className="text-sm font-semibold text-foreground mb-3 text-center">{graph.title}</h4>
+      )}
+      <div ref={containerRef} className="w-full overflow-hidden rounded-lg" />
+      {graph.functions.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2 justify-center">
+          {graph.functions.map((fn, i) => (
+            <span key={i} className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground font-mono">
+              {fn}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Recharts (rétrocompatibilité) ── */
 
 export function ChartBlock({ chart }: { chart: ChartData }) {
   const ChartComponent = useMemo(() => {
