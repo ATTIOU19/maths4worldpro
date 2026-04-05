@@ -12,6 +12,7 @@ import EntretienSession from "./pages/EntretienSession";
 import Inscription from "./pages/Inscription";
 import Connexion from "./pages/Connexion";
 import ChatIA from "./pages/ChatIA";
+import Visualisation from "./pages/Visualisation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/connexion" element={<Connexion />} />
           <Route path="/chat" element={<ChatIA />} />
+          <Route path="/visualisation" element={<Visualisation />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
