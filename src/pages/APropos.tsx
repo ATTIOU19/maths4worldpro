@@ -142,7 +142,7 @@ const APropos = () => {
             >
               <Mail size={18} /> Nous contacter <ArrowRight size={16} />
             </a>
-            <p className="text-muted-foreground text-sm mt-3">attioukotchole@gmail.com</p>
+            
           </motion.div>
         </div>
       </div>
