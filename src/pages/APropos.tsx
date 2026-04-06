@@ -116,19 +116,18 @@ const APropos = () => {
             ))}
           </div>
 
-          {/* Supporters */}
-          <div className="text-center mb-16">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
-              Soutenu par
-            </h3>
-            <div className="flex flex-wrap items-center justify-center gap-6">
-              {supporters.map((name) => (
-                <div key={name} className="bg-card rounded-xl px-6 py-3 shadow-card">
-                  <span className="font-bold text-muted-foreground text-sm">{name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Funding */}
+          <motion.div
+            className="bg-card rounded-2xl p-8 shadow-card text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h3 className="text-lg font-bold text-card-foreground mb-2">🔎 À la recherche de financement et de partenariats</h3>
+            <p className="text-muted-foreground text-sm">
+              MATHS4WORLD est activement à la recherche de partenaires stratégiques et de financements pour accélérer sa mission éducative en Afrique francophone.
+            </p>
+          </motion.div>
 
           {/* Contact CTA */}
           <motion.div
