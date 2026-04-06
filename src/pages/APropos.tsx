@@ -11,7 +11,7 @@ const timeline = [
   { year: "2026", title: "Le lancement", desc: "MATHS4WORLD ouvre l'accès à 400 millions de francophones africains." },
 ];
 
-const supporters = ["FMI", "UNESCO", "Banque Mondiale", "UNICEF", "AFD"];
+
 
 const APropos = () => {
   return (
