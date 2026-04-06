@@ -137,11 +137,12 @@ const APropos = () => {
             viewport={{ once: true }}
           >
             <a
-              href="mailto:contact@maths4world.com"
+              href="mailto:attioukotchole@gmail.com"
               className="inline-flex items-center gap-2 px-8 py-4 bg-secondary text-secondary-foreground rounded-xl text-base font-semibold hover:scale-[1.02] hover:shadow-hero transition-all duration-300"
             >
               <Mail size={18} /> Nous contacter <ArrowRight size={16} />
             </a>
+            <p className="text-muted-foreground text-sm mt-3">attioukotchole@gmail.com</p>
           </motion.div>
         </div>
       </div>
