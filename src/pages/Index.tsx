@@ -65,8 +65,7 @@ const Index = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <h1 className="text-4xl md:text-6xl font-extrabold text-primary-foreground leading-tight mb-6">
-              L'intelligence artificielle qui enseigne les mathématiques{" "}
-              <span className="opacity-80">à l'africaine</span>
+              L'intelligence artificielle qui enseigne les mathématiques
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10 leading-relaxed">
               Tuteur IA conversationnel · Réponse visuelle automatique · Adapté aux curricula africains · Évaluation orale
