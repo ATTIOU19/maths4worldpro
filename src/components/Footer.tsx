@@ -12,7 +12,7 @@ const Footer = () => (
             <span className="font-bold text-lg">MATHS4WORLD</span>
           </div>
           <p className="text-primary-foreground/60 text-sm leading-relaxed">
-            L'IA qui enseigne les maths comme l'Afrique les vit
+            L'IA qui enseigne les mathématiques
           </p>
         </div>
 
