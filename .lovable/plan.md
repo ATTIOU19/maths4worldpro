@@ -1,10 +1,14 @@
 
 
-## Modifications du Footer
+## Modification du texte d'accueil du chat
 
-Deux changements dans `src/components/Footer.tsx` :
+**Fichier** : `src/pages/ChatIA.tsx`
 
-1. **Contact cliquable** — Transformer le texte `contact@maths4world.com` en lien `mailto:attioukotchole@gmail.com` pour ouvrir directement le client mail au clic.
+Changer la phrase :
+> "Ta tutrice IA en mathématiques. Pose-moi n'importe quelle question et je t'expliquerai avec des exemples concrets d'Afrique de l'Ouest."
 
-2. **Slogan** — Changer "L'IA qui enseigne les maths comme l'Afrique les vit" en "L'IA qui enseigne les mathématiques" (cohérent avec le slogan officiel).
+En :
+> "Ta tutrice IA en mathématiques. Pose-moi n'importe quelle question et je t'expliquerai avec des exemples concrets."
+
+Suppression de "d'Afrique de l'Ouest" uniquement.
 
