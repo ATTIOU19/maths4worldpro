@@ -156,7 +156,7 @@ const ChatIA = () => {
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">Salut ! Je suis Amara 👋</h2>
             <p className="text-muted-foreground text-sm max-w-md mb-8">
-              Ta tutrice IA en mathématiques. Pose-moi n'importe quelle question et je t'expliquerai avec des exemples concrets d'Afrique de l'Ouest.
+              Ta tutrice IA en mathématiques. Pose-moi n'importe quelle question et je t'expliquerai avec des exemples concrets.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
               {SUGGESTIONS.map((s) => (
