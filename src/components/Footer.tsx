@@ -12,7 +12,7 @@ const Footer = () => (
             <span className="font-bold text-lg">MATHS4WORLD</span>
           </div>
           <p className="text-primary-foreground/60 text-sm leading-relaxed">
-            L'IA qui enseigne les maths comme l'Afrique les vit
+            L'IA qui enseigne les mathématiques
           </p>
         </div>
 
@@ -28,7 +28,7 @@ const Footer = () => (
 
         <div>
           <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-primary-foreground/40">Contact</h4>
-          <p className="text-primary-foreground/70 text-sm">contact@maths4world.com</p>
+          <a href="mailto:attioukotchole@gmail.com" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">attioukotchole@gmail.com</a>
           <p className="text-primary-foreground/60 text-sm mt-2">© 2026 MATHS4WORLD. Tous droits réservés.</p>
         </div>
       </div>
