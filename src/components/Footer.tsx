@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 const Footer = () => (
-  <footer className="bg-primary text-primary-foreground py-16">
+  <footer className="mt-auto bg-primary text-primary-foreground py-16">
     <div className="container mx-auto px-4">
       <div className="grid md:grid-cols-3 gap-12">
         <div>
@@ -27,7 +27,7 @@ const Footer = () => (
         </div>
 
         <div>
-          <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-primary-foreground/40">Contact</h4>
+          <a href="mailto:attioukotchole@gmail.com" className="font-semibold mb-4 text-sm uppercase tracking-wider text-primary-foreground/40 hover:text-primary-foreground transition-colors underline-offset-4 hover:underline block">Contact</a>
           <a href="mailto:attioukotchole@gmail.com" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">attioukotchole@gmail.com</a>
           <p className="text-primary-foreground/60 text-sm mt-2">© 2026 MATHS4WORLD. Tous droits réservés.</p>
         </div>
