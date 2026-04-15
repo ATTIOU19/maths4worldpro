@@ -1,19 +1,14 @@
 
 
-## Plan : Lancer le chat automatiquement avec les bases de la notion
+## Modifications du Footer
 
-### Modifications
+### 1. Footer plus bas
+Ajouter `mt-auto` au footer et wraper le layout des pages avec `min-h-screen flex flex-col` pour que le footer soit toujours poussé en bas de la page. Cela se fait dans les pages qui incluent le Footer (Index, etc.).
 
-**1. `src/pages/MathsMetier.tsx`** — Modifier le prompt dans `handleLearn` pour demander de commencer par les bases :
-```
-Enseigne-moi la notion "${notion}" dans le contexte du domaine "${domaine}".
-Commence par les bases et les prérequis fondamentaux, puis progresse étape par étape avec des exemples concrets liés à ce métier.
-```
+### 2. "Contact" comme lien mailto
+Transformer le titre `<h4>Contact</h4>` en lien cliquable `<a href="mailto:attioukotchole@gmail.com">Contact</a>` avec un style de lien hypertexte (souligné au survol).
 
-**2. `src/pages/ChatIA.tsx`** — Lire le paramètre `prompt` de l'URL au montage et envoyer automatiquement :
-- Importer `useSearchParams` de react-router-dom
-- Ajouter un `useEffect` qui lit `searchParams.get("prompt")` et appelle `send(prompt)` si présent
-- Nettoyer le paramètre URL après envoi
-
-Résultat : clic sur "Apprendre cette notion" → redirection vers le chat → Amara commence directement par les bases.
+### Fichiers modifiés
+- **`src/components/Footer.tsx`** : transformer le `<h4>Contact</h4>` en `<a href="mailto:...">`, ajouter `mt-auto` au footer
+- **`src/pages/Index.tsx`** (et autres pages avec Footer) : ajouter `min-h-screen flex flex-col` au conteneur principal pour pousser le footer en bas
 
