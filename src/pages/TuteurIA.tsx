@@ -5,6 +5,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const chartData = Array.from({ length: 61 }, (_, i) => {
   const x = (i - 30) / 10;
@@ -21,27 +23,26 @@ interface ChatMessage {
   time: string;
 }
 
-// Each step: AI asks, then user responds (with a suggested response)
-const conversationSteps: { ai: ChatMessage; user: ChatMessage; suggestedInput: string }[] = [
+const conversationSteps = [
   {
-    ai: { role: "ai", text: "Bonjour ! Je suis Amara, votre tuteur IA. Avant de commencer, dites-moi : connaissez-vous la règle de dérivation des monômes ? Par exemple, si g(x) = xⁿ, que vaut g'(x) ?", time: "14:02" },
-    user: { role: "user", text: "Je crois que c'est n fois x puissance n-1 ?", time: "14:03" },
-    suggestedInput: "Je crois que c'est n fois x puissance n-1 ?",
+    ai: { role: "ai" as const, text: "Bonjour ! Je suis Amara, votre tuteur IA. Avant de commencer, dites-moi : connaissez-vous la règle de dérivation des monômes ? Par exemple, si g(x) = xⁿ, que vaut g'(x) ?", time: "14:02" },
+    expectedConcept: "La dérivée de x^n est n*x^(n-1). La règle de dérivation des monômes.",
+    nextAi: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
   },
   {
-    ai: { role: "ai", text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
-    user: { role: "user", text: "Pour x³ ça donne 3x² et pour -2x ça donne -2, et la constante 1 donne 0 ?", time: "14:04" },
-    suggestedInput: "Pour x³ ça donne 3x² et pour -2x ça donne -2, et la constante 1 donne 0 ?",
+    ai: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
+    expectedConcept: "La dérivée de x³ est 3x², la dérivée de -2x est -2, la dérivée de la constante 1 est 0. Donc f'(x) = 3x² - 2.",
+    nextAi: { role: "ai" as const, text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
   },
   {
-    ai: { role: "ai", text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
-    user: { role: "user", text: "Oui ! Quand la dérivée est positive, la fonction monte.", time: "14:05" },
-    suggestedInput: "Oui ! Quand la dérivée est positive, la fonction monte.",
+    ai: { role: "ai" as const, text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
+    expectedConcept: "Quand la dérivée f'(x) est positive, la fonction f(x) est croissante. Quand f'(x) est négative, f(x) est décroissante.",
+    nextAi: null,
   },
 ];
 
 const TuteurIA = () => {
-  const [step, setStep] = useState(0); // current step in conversation
+  const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -52,39 +53,74 @@ const TuteurIA = () => {
   const startConversation = () => {
     setStarted(true);
     setIsTyping(true);
-    // Show first AI message after a brief delay
     setTimeout(() => {
       setMessages([conversationSteps[0].ai]);
       setIsTyping(false);
-      
     }, 1000);
   };
 
-  const handleSend = () => {
-    if (isTyping || step >= conversationSteps.length) return;
+  const handleSend = async () => {
+    if (isTyping || step >= conversationSteps.length || !input.trim()) return;
 
     const currentStep = conversationSteps[step];
     const userMsg: ChatMessage = {
       role: "user",
-      text: input.trim() || currentStep.suggestedInput,
-      time: currentStep.user.time,
+      text: input.trim(),
+      time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
-    const nextStep = step + 1;
-    setStep(nextStep);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-answer", {
+        body: {
+          question: currentStep.ai.text,
+          userAnswer: userMsg.text,
+          expectedConcept: currentStep.expectedConcept,
+        },
+      });
 
-    // Show next AI response after delay
-    setTimeout(() => {
-      if (nextStep < conversationSteps.length) {
-        setMessages((prev) => [...prev, conversationSteps[nextStep].ai]);
-        
+      if (error) throw error;
+
+      const { correct, feedback } = data;
+
+      if (correct) {
+        // Show AI feedback then advance
+        const feedbackMsg: ChatMessage = {
+          role: "ai",
+          text: feedback,
+          time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, feedbackMsg]);
+
+        const nextStep = step + 1;
+        setStep(nextStep);
+
+        // Show next scripted AI message after a delay
+        if (currentStep.nextAi && nextStep < conversationSteps.length) {
+          setTimeout(() => {
+            setMessages((prev) => [...prev, conversationSteps[nextStep].ai]);
+            setIsTyping(false);
+          }, 1500);
+          return;
+        }
+      } else {
+        // Show correction feedback, stay on same step
+        const feedbackMsg: ChatMessage = {
+          role: "ai",
+          text: feedback,
+          time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, feedbackMsg]);
       }
-      setIsTyping(false);
-    }, 1200);
+    } catch (e) {
+      console.error("Verification error:", e);
+      toast.error("Erreur lors de la vérification. Réessayez.");
+    }
+
+    setIsTyping(false);
   };
 
   const isConversationDone = step >= conversationSteps.length;
