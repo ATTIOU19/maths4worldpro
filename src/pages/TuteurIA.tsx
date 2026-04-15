@@ -56,7 +56,7 @@ const TuteurIA = () => {
     setTimeout(() => {
       setMessages([conversationSteps[0].ai]);
       setIsTyping(false);
-      setInput(conversationSteps[0].suggestedInput);
+      
     }, 1000);
   };
 
@@ -81,7 +81,7 @@ const TuteurIA = () => {
     setTimeout(() => {
       if (nextStep < conversationSteps.length) {
         setMessages((prev) => [...prev, conversationSteps[nextStep].ai]);
-        setInput(conversationSteps[nextStep].suggestedInput);
+        
       }
       setIsTyping(false);
     }, 1200);
