@@ -1,32 +1,22 @@
 
 
-## Plan : Vérification IA des réponses dans le Tuteur IA
+## Correction : Vérification trop stricte dans le Tuteur IA
 
-### Problème actuel
-La démo du Tuteur IA accepte n'importe quelle réponse et passe directement à l'étape suivante, sans vérifier si la réponse est correcte.
+### Problème
+L'IA de vérification est trop exigeante sur la formulation. Quand l'élève répond "3x^2 - 2" (réponse correcte), l'IA considère que c'est incomplet parce que le `expectedConcept` demande le détail terme par terme. Résultat : l'élève est bloqué même avec la bonne réponse.
 
-### Solution
-Quand l'utilisateur envoie sa réponse, appeler l'edge function `math-chat` (ou une nouvelle fonction dédiée) pour que l'IA vérifie si la réponse est correcte. Selon le résultat :
-- **Correcte** → afficher le message de validation puis continuer la conversation scriptée
-- **Incorrecte** → afficher un message d'encouragement de l'IA expliquant l'erreur et invitant à réessayer, sans avancer à l'étape suivante
+### Solution (2 modifications)
 
-### Modifications
+**1. `supabase/functions/verify-answer/index.ts`** — Rendre le prompt de vérification plus indulgent :
+- Modifier le prompt système pour préciser : "Si la réponse finale est mathématiquement correcte, considère-la comme correcte même si l'élève ne détaille pas chaque étape."
+- Ajouter l'instruction : "Sois indulgent sur la notation (3x^2 = 3x² = 3·x²)"
 
-**1. `src/pages/TuteurIA.tsx`** — Modifier `handleSend` :
-- Au lieu d'avancer automatiquement, envoyer la réponse de l'utilisateur + la question posée à une edge function pour vérification
-- Ajouter les réponses attendues dans `conversationSteps` (ex: `expectedAnswer` avec mots-clés)
-- Si l'IA juge la réponse correcte → avancer au step suivant (afficher la réponse scriptée)
-- Si incorrecte → afficher un message IA personnalisé (ex: "Pas tout à fait, réessaye ! Indice : ...") et rester au même step
+**2. `src/pages/TuteurIA.tsx`** — Simplifier les `expectedConcept` :
+- Step 1 : changer en `"La règle est n·x^(n-1). Par exemple la dérivée de x^n est n*x^(n-1)"`
+- Step 2 : changer en `"f'(x) = 3x² - 2. Accepter aussi 3x^2 - 2 ou toute formulation équivalente."`
+- Step 3 : garder tel quel
 
-**2. `supabase/functions/verify-answer/index.ts`** — Nouvelle edge function :
-- Reçoit : `{ question, userAnswer, expectedConcept }`
-- Appelle Lovable AI Gateway avec un prompt système dédié : "Tu es un correcteur. Vérifie si la réponse de l'élève est correcte. Réponds en JSON : `{ correct: boolean, feedback: string }`"
-- Retourne le résultat JSON
-
-### Flux utilisateur
-1. Amara pose une question
-2. L'utilisateur tape sa réponse
-3. L'IA vérifie → typing indicator pendant la vérification
-4. Si correct : message de félicitations + passage à l'étape suivante
-5. Si incorrect : message d'aide bienveillant + l'utilisateur peut réessayer
+### Fichiers modifiés
+- `supabase/functions/verify-answer/index.ts`
+- `src/pages/TuteurIA.tsx`
 
