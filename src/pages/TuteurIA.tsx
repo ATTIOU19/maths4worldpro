@@ -26,12 +26,12 @@ interface ChatMessage {
 const conversationSteps = [
   {
     ai: { role: "ai" as const, text: "Bonjour ! Je suis Amara, votre tuteur IA. Avant de commencer, dites-moi : connaissez-vous la règle de dérivation des monômes ? Par exemple, si g(x) = xⁿ, que vaut g'(x) ?", time: "14:02" },
-    expectedConcept: "La dérivée de x^n est n*x^(n-1). La règle de dérivation des monômes.",
+    expectedConcept: "La règle est n·x^(n-1). Par exemple la dérivée de x^n est n*x^(n-1).",
     nextAi: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
   },
   {
     ai: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
-    expectedConcept: "La dérivée de x³ est 3x², la dérivée de -2x est -2, la dérivée de la constante 1 est 0. Donc f'(x) = 3x² - 2.",
+    expectedConcept: "f'(x) = 3x² - 2. Accepter aussi 3x^2 - 2 ou toute formulation équivalente.",
     nextAi: { role: "ai" as const, text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
   },
   {
