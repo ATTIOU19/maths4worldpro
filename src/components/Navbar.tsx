@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "@/assets/logo-maths4world.jpeg";
 
 const navLinks = [
   { label: "Accueil", to: "/" },
@@ -21,9 +22,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md border-b border-primary-foreground/10">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
-            <span className="text-secondary-foreground font-black text-sm tracking-tight">M4W</span>
-          </div>
+          <img src={logo} alt="Maths4World" className="w-10 h-10 rounded-lg object-cover" />
           <span className="text-primary-foreground font-bold text-lg tracking-tight hidden sm:block">MATHS4WORLD</span>
         </Link>
 
