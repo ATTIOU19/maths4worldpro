@@ -5,6 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import Navbar from "@/components/Navbar";
+import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -126,9 +127,10 @@ const TuteurIA = () => {
   const isConversationDone = step >= conversationSteps.length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <MathSymbolsBackground variant="light" count={14} opacity={0.05} />
       <Navbar />
-      <div className="pt-16 h-screen flex">
+      <div className="pt-16 h-screen flex relative z-10">
         {/* LEFT - Chat */}
         <div className="w-full lg:w-[40%] flex flex-col border-r border-border bg-card">
           {/* Chat Header */}

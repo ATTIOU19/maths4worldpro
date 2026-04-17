@@ -4,6 +4,7 @@ import { Send, ArrowLeft, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -123,7 +124,8 @@ const ChatIA = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background relative overflow-hidden">
+      <MathSymbolsBackground variant="light" count={12} opacity={0.05} />
       {/* Header */}
       <header className="bg-primary text-primary-foreground px-4 py-3 flex items-center gap-3 shrink-0">
         <Link to="/" className="hover:opacity-80 transition-opacity">

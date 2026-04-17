@@ -3,6 +3,7 @@ import { Mail, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 
 const timeline = [
   { year: "2023", title: "Le constat", desc: "50 outils EdTech analysés — aucun ne cible les francophones africains avec un tuteur IA socratique." },
@@ -15,9 +16,10 @@ const timeline = [
 
 const APropos = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      <MathSymbolsBackground variant="light" count={14} opacity={0.05} />
       <Navbar />
-      <div className="pt-24 pb-16">
+      <div className="pt-24 pb-16 relative z-10">
         <div className="container mx-auto px-4 max-w-4xl">
           <motion.div
             className="text-center mb-16"
