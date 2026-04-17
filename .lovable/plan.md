@@ -1,22 +1,57 @@
 
 
-## Correction : Vérification trop stricte dans le Tuteur IA
+L'utilisateur veut rendre la plateforme plus dynamique et engageante, avec des symboles mathématiques en arrière-plan visibles partout, pour donner envie d'apprendre dès l'arrivée.
 
-### Problème
-L'IA de vérification est trop exigeante sur la formulation. Quand l'élève répond "3x^2 - 2" (réponse correcte), l'IA considère que c'est incomplet parce que le `expectedConcept` demande le détail terme par terme. Résultat : l'élève est bloqué même avec la bonne réponse.
+Note : la page d'accueil a déjà des symboles mathématiques flottants dans le hero (∑, ∫, π, √, ∞, Δ, ∂, λ, θ, φ) mais ils sont très transparents (opacité 0.05) et limités au hero. Je vais amplifier l'effet et le propager.
 
-### Solution (2 modifications)
+## Plan : Plateforme dynamique et engageante
 
-**1. `supabase/functions/verify-answer/index.ts`** — Rendre le prompt de vérification plus indulgent :
-- Modifier le prompt système pour préciser : "Si la réponse finale est mathématiquement correcte, considère-la comme correcte même si l'élève ne détaille pas chaque étape."
-- Ajouter l'instruction : "Sois indulgent sur la notation (3x^2 = 3x² = 3·x²)"
+### 1. Symboles mathématiques en arrière-plan (composant réutilisable)
 
-**2. `src/pages/TuteurIA.tsx`** — Simplifier les `expectedConcept` :
-- Step 1 : changer en `"La règle est n·x^(n-1). Par exemple la dérivée de x^n est n*x^(n-1)"`
-- Step 2 : changer en `"f'(x) = 3x² - 2. Accepter aussi 3x^2 - 2 ou toute formulation équivalente."`
-- Step 3 : garder tel quel
+Créer `src/components/MathSymbolsBackground.tsx` :
+- Composant de fond avec ~15-20 symboles flottants animés (∑, ∫, π, √, ∞, Δ, ∂, λ, θ, φ, ≈, ≠, ∇, ∈, ⊂, %, ÷, ×, ²)
+- Tailles variées (24px à 72px), positions aléatoires, animations désynchronisées
+- Opacité augmentée (0.08 à 0.12 selon le fond) pour être visible sans gêner la lecture
+- Variante claire (sur fond blanc) et variante foncée (sur fond bleu hero)
+- `pointer-events: none` pour ne pas bloquer les clics
 
-### Fichiers modifiés
-- `supabase/functions/verify-answer/index.ts`
-- `src/pages/TuteurIA.tsx`
+L'utiliser sur : Accueil (toutes sections), Chat IA, Tuteur IA, Visualisation, Maths Métier, À propos, Connexion, Inscription.
+
+### 2. Hero d'accueil plus vivant
+
+Dans `src/pages/Index.tsx` :
+- Ajouter un badge animé au-dessus du titre : « 🚀 Nouvelle génération de tuteur IA » avec pulse léger
+- Animation typewriter sur un mot-clé du titre (ex : « mathématiques » qui se réécrit)
+- Boutons CTA avec effet de brillance (shine) au hover
+- Ajouter une équation animée flottante près du titre (ex : `f'(x) = 3x² - 2` qui apparaît progressivement)
+
+### 3. Animations au scroll renforcées
+
+- Cartes Features : ajouter un effet de tilt léger au hover (rotation 3D subtile)
+- Section « Comment ça marche » : ligne animée qui se trace entre les étapes au scroll
+- Compteurs Stats : déjà animés, ajouter un glow subtil pendant le comptage
+
+### 4. Nouvelle section « Aperçu en direct » sur l'accueil
+
+Avant la section Stats, ajouter une section démo visuelle :
+- Mini-carte qui simule une conversation avec Amara (3-4 bulles statiques mais stylées)
+- À côté, un mini-graphique `function-plot` d'une parabole `x²` pour illustrer la visualisation auto
+- CTA : « Essayer maintenant »
+
+### 5. Micro-interactions globales
+
+- Curseur personnalisé subtil sur les boutons CTA (effet magnetic léger via Framer Motion)
+- Transitions de page avec fade-in via `AnimatePresence` dans `App.tsx`
+
+### Fichiers modifiés / créés
+
+- **Créé** : `src/components/MathSymbolsBackground.tsx`
+- **Modifié** : `src/pages/Index.tsx` (badge, hero enrichi, section démo, fond)
+- **Modifié** : `src/pages/ChatIA.tsx`, `src/pages/TuteurIA.tsx`, `src/pages/Visualisation.tsx`, `src/pages/MathsMetier.tsx`, `src/pages/APropos.tsx`, `src/pages/Connexion.tsx`, `src/pages/Inscription.tsx` (ajout du fond)
+- **Modifié** : `src/index.css` (nouvelle keyframe shine + variantes d'opacité pour symboles)
+- **Modifié** : `src/App.tsx` (transitions de page)
+
+### Résultat attendu
+
+Sensation immédiate « plateforme vivante et premium » : symboles maths qui flottent doucement partout en fond, hero qui respire avec équation animée, démo visible sans scroller loin, micro-interactions partout = envie immédiate de cliquer et d'apprendre.
 
