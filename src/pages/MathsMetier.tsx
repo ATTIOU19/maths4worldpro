@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 import { Badge } from "@/components/ui/badge";
 
 type Notion = {
@@ -109,9 +110,10 @@ const MathsMetier = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      <MathSymbolsBackground variant="light" count={16} opacity={0.05} />
       <Navbar />
-      <div className="pt-24 pb-16">
+      <div className="pt-24 pb-16 relative z-10">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-12"

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
+import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 
 const PAYS_AFRIQUE = [
   "Bénin", "Burkina Faso", "Cameroun", "Côte d'Ivoire", "Gabon",
@@ -54,8 +55,9 @@ const Inscription = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
+      <MathSymbolsBackground variant="light" count={16} opacity={0.06} />
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
