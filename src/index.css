@@ -217,14 +217,66 @@
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Floating math symbols */
+/* Floating math symbols — opacity gérée via inline style, on n'anime que la transformation */
 @keyframes float-symbol {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.04; }
-  50% { transform: translateY(-20px) rotate(10deg); opacity: 0.08; }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-24px) rotate(8deg); }
 }
 
 .math-symbol {
   animation: float-symbol 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Shine effect on CTA buttons */
+@keyframes shine {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(250%) skewX(-15deg); }
+}
+
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.35), transparent);
+  transform: translateX(-100%) skewX(-15deg);
+  pointer-events: none;
+}
+
+.btn-shine:hover::after {
+  animation: shine 0.9s ease-out;
+}
+
+/* Pulse glow for badges */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--secondary) / 0.4); }
+  50% { box-shadow: 0 0 0 8px hsl(var(--secondary) / 0); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+/* Typewriter caret */
+@keyframes blink-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.caret {
+  display: inline-block;
+  width: 3px;
+  background: currentColor;
+  margin-left: 2px;
+  animation: blink-caret 0.9s step-end infinite;
 }
 
 /* Stats counter animation */
