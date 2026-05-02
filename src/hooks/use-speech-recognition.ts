@@ -73,9 +73,12 @@ export function useSpeechRecognition({ lang = "fr", onResult, onEnd }: UseSpeech
     };
 
     recognition.onerror = (event) => {
-      console.error("Speech recognition error:", (event as any).error);
+      const err = (event as any).error;
+      console.error("Speech recognition error:", err);
       setIsListening(false);
       setInterim("");
+      // Surface common errors to UI via a custom event
+      window.dispatchEvent(new CustomEvent("speech-recognition-error", { detail: err }));
     };
 
     recognition.onend = () => {
