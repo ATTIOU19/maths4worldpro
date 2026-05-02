@@ -1,57 +1,87 @@
+## 4 modifications demandées
 
+### 1. Page d'accueil — retirer la ligne descriptive
 
-L'utilisateur veut rendre la plateforme plus dynamique et engageante, avec des symboles mathématiques en arrière-plan visibles partout, pour donner envie d'apprendre dès l'arrivée.
+Dans `src/pages/Index.tsx`, supprimer le paragraphe :
 
-Note : la page d'accueil a déjà des symboles mathématiques flottants dans le hero (∑, ∫, π, √, ∞, Δ, ∂, λ, θ, φ) mais ils sont très transparents (opacité 0.05) et limités au hero. Je vais amplifier l'effet et le propager.
+> « Tuteur IA conversationnel · Réponse visuelle automatique · Adapté aux curricula africains · Évaluation orale »
 
-## Plan : Plateforme dynamique et engageante
+### 2. Tuteur IA — retirer les sélecteurs niveau et pays
 
-### 1. Symboles mathématiques en arrière-plan (composant réutilisable)
+Dans `src/pages/TuteurIA.tsx` (en-tête du chat) :
 
-Créer `src/components/MathSymbolsBackground.tsx` :
-- Composant de fond avec ~15-20 symboles flottants animés (∑, ∫, π, √, ∞, Δ, ∂, λ, θ, φ, ≈, ≠, ∇, ∈, ⊂, %, ÷, ×, ²)
-- Tailles variées (24px à 72px), positions aléatoires, animations désynchronisées
-- Opacité augmentée (0.08 à 0.12 selon le fond) pour être visible sans gêner la lecture
-- Variante claire (sur fond blanc) et variante foncée (sur fond bleu hero)
-- `pointer-events: none` pour ne pas bloquer les clics
+- Supprimer les deux `<select>` (Terminale C/D / Première / … et 🇧🇯 Bénin / 🇸🇳 Sénégal / …).
+- Garder uniquement l'avatar « Amara » et son statut « En ligne ».
 
-L'utiliser sur : Accueil (toutes sections), Chat IA, Tuteur IA, Visualisation, Maths Métier, À propos, Connexion, Inscription.
+### 3. Entretien vocal — supprimer toute mention de dollars / FCFA / argent
 
-### 2. Hero d'accueil plus vivant
+Dans `supabase/functions/entretien-chat/index.ts`, ajouter une règle stricte au `systemPrompt` :
 
-Dans `src/pages/Index.tsx` :
-- Ajouter un badge animé au-dessus du titre : « 🚀 Nouvelle génération de tuteur IA » avec pulse léger
-- Animation typewriter sur un mot-clé du titre (ex : « mathématiques » qui se réécrit)
-- Boutons CTA avec effet de brillance (shine) au hover
-- Ajouter une équation animée flottante près du titre (ex : `f'(x) = 3x² - 2` qui apparaît progressivement)
+- « Tu es un assistant pédagogique qui explique les mathématiques à l’oral.
+  Règles STRICTES :
+  - N’utilise JAMAIS de LaTeX (pas de $, \frac, \sqrt, etc.)
+  - N’utilise pas de notation mathématique brute
+  - Transforme toujours les expressions en langage naturel, comme si tu parlais à un élève
+  Règles de conversion :
+  - f(x) → "f de x"
+  - = → "égale"
+  - / → "sur"
+  - a - b → "a moins b"
+  - a + b → "a plus b"
+  - a × b → "a fois b"
+  - a^2 → "a au carré"
+  - a^n → "a puissance n"
+  Exemples :
+  - f(x)=2/(2-x) → "f de x égale deux sur deux moins x"
+  - x^2 + 3x → "x au carré plus trois x"
+  Important :
+  - Le texte doit être parfaitement lisible par une synthèse vocale (TTS)
+  - Ne lis jamais les symboles comme "$" ou "\" ou caractère par caractère
+  - Toujours privilégier une phrase naturelle et fluide
+  Objectif :
+  Produire une réponse compréhensible à l’oral, naturelle et fluide, sans symboles techniques.»
+- Re-déployer la fonction `entretien-chat` automatiquement après modification.
 
-### 3. Animations au scroll renforcées
+### 4. Authentification obligatoire avant l'accès au site
 
-- Cartes Features : ajouter un effet de tilt léger au hover (rotation 3D subtile)
-- Section « Comment ça marche » : ligne animée qui se trace entre les étapes au scroll
-- Compteurs Stats : déjà animés, ajouter un glow subtil pendant le comptage
+Aujourd'hui `/` (accueil) est accessible sans compte. Mettre en place une **garde d'authentification globale** :
 
-### 4. Nouvelle section « Aperçu en direct » sur l'accueil
+- Créer `src/components/RequireAuth.tsx` :
+  - Écoute `supabase.auth.onAuthStateChange` + `getSession()` (listener AVANT getSession, conformément aux bonnes pratiques).
+  - Si pas de session → `<Navigate to="/connexion" replace />`.
+  - Si session → rend les enfants.
+  - Affiche un petit loader pendant la vérification initiale.
+- Dans `src/App.tsx`, envelopper toutes les routes protégées avec `RequireAuth`. Routes **publiques** (non protégées) :
+  - `/connexion`
+  - `/inscription`
+  - `*` (NotFound)
+  Routes **protégées** (nécessitent un compte) :
+  - `/` (Accueil)
+  - `/tuteur-ia`, `/maths-metier`, `/a-propos`
+  - `/entretien-vocal`, `/entretien-vocal/session`
+  - `/chat`, `/visualisation`
+- Sur `/connexion` et `/inscription`, après succès, rediriger vers `/`.
 
-Avant la section Stats, ajouter une section démo visuelle :
-- Mini-carte qui simule une conversation avec Amara (3-4 bulles statiques mais stylées)
-- À côté, un mini-graphique `function-plot` d'une parabole `x²` pour illustrer la visualisation auto
-- CTA : « Essayer maintenant »
-
-### 5. Micro-interactions globales
-
-- Curseur personnalisé subtil sur les boutons CTA (effet magnetic léger via Framer Motion)
-- Transitions de page avec fade-in via `AnimatePresence` dans `App.tsx`
+```text
+Visiteur ──► / ──► RequireAuth ──► session ?
+                                    │
+                       non ─────────┴───────── oui
+                        ▼                       ▼
+                  /connexion                Accueil
+```
 
 ### Fichiers modifiés / créés
 
-- **Créé** : `src/components/MathSymbolsBackground.tsx`
-- **Modifié** : `src/pages/Index.tsx` (badge, hero enrichi, section démo, fond)
-- **Modifié** : `src/pages/ChatIA.tsx`, `src/pages/TuteurIA.tsx`, `src/pages/Visualisation.tsx`, `src/pages/MathsMetier.tsx`, `src/pages/APropos.tsx`, `src/pages/Connexion.tsx`, `src/pages/Inscription.tsx` (ajout du fond)
-- **Modifié** : `src/index.css` (nouvelle keyframe shine + variantes d'opacité pour symboles)
-- **Modifié** : `src/App.tsx` (transitions de page)
+- `src/pages/Index.tsx` — suppression du sous-titre.
+- `src/pages/TuteurIA.tsx` — suppression des deux selects.
+- `supabase/functions/entretien-chat/index.ts` — règle « pas d'argent ».
+- `src/components/RequireAuth.tsx` — **nouveau**.
+- `src/App.tsx` — wrapping des routes protégées.
+- (Vérification rapide que `Connexion.tsx` / `Inscription.tsx` redirigent bien vers `/` après succès — sinon ajustement minimal.)
 
 ### Résultat attendu
 
-Sensation immédiate « plateforme vivante et premium » : symboles maths qui flottent doucement partout en fond, hero qui respire avec équation animée, démo visible sans scroller loin, micro-interactions partout = envie immédiate de cliquer et d'apprendre.
-
+- Accueil épuré sans la ligne marketing.
+- Tuteur IA sans menus déroulants superflus.
+- Amara ne parle plus jamais d'argent pendant les entretiens.
+- Toute personne qui ouvre le lien de l'app est redirigée vers `/connexion` tant qu'elle n'a pas de compte / n'est pas connectée.
