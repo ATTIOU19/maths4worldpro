@@ -14,6 +14,7 @@ import Connexion from "./pages/Connexion";
 import ChatIA from "./pages/ChatIA";
 import Visualisation from "./pages/Visualisation";
 import NotFound from "./pages/NotFound";
+import RequireAuth from "./components/RequireAuth";
 
 const queryClient = new QueryClient();
 
@@ -24,16 +25,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/tuteur-ia" element={<TuteurIA />} />
-          <Route path="/maths-metier" element={<MathsMetier />} />
-          <Route path="/a-propos" element={<APropos />} />
-          <Route path="/entretien-vocal" element={<EntretienSetup />} />
-          <Route path="/entretien-vocal/session" element={<EntretienSession />} />
+          {/* Routes publiques */}
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/connexion" element={<Connexion />} />
-          <Route path="/chat" element={<ChatIA />} />
-          <Route path="/visualisation" element={<Visualisation />} />
+
+          {/* Routes protégées */}
+          <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
+          <Route path="/tuteur-ia" element={<RequireAuth><TuteurIA /></RequireAuth>} />
+          <Route path="/maths-metier" element={<RequireAuth><MathsMetier /></RequireAuth>} />
+          <Route path="/a-propos" element={<RequireAuth><APropos /></RequireAuth>} />
+          <Route path="/entretien-vocal" element={<RequireAuth><EntretienSetup /></RequireAuth>} />
+          <Route path="/entretien-vocal/session" element={<RequireAuth><EntretienSession /></RequireAuth>} />
+          <Route path="/chat" element={<RequireAuth><ChatIA /></RequireAuth>} />
+          <Route path="/visualisation" element={<RequireAuth><Visualisation /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
