@@ -145,25 +145,8 @@ const TuteurIA = () => {
                   <span className="w-2 h-2 rounded-full bg-success inline-block" />
                   <span className="text-xs text-success">En ligne</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Niveau : Terminale C/D · Programme : BAC Bénin</p>
+                <p className="text-xs text-muted-foreground">Tutrice IA en mathématiques</p>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <select className="text-xs bg-muted rounded-lg px-3 py-1.5 text-foreground border border-border">
-                <option>Terminale C/D</option>
-                <option>Première</option>
-                <option>Seconde</option>
-                <option>3ème</option>
-                <option>Concours</option>
-              </select>
-              <select className="text-xs bg-muted rounded-lg px-3 py-1.5 text-foreground border border-border">
-                <option>🇧🇯 Bénin</option>
-                <option>🇸🇳 Sénégal</option>
-                <option>🇨🇮 Côte d'Ivoire</option>
-                <option>🇨🇲 Cameroun</option>
-                <option>🇲🇱 Mali</option>
-                <option>🇧🇫 Burkina Faso</option>
-              </select>
             </div>
           </div>
 
