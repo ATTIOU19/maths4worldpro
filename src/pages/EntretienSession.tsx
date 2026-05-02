@@ -137,10 +137,9 @@ const EntretienSession = () => {
     lang: config?.langue || "fr",
     rate: 0.95,
     onEnd: () => {
-      // Auto-start listening after AI finishes speaking
-      if (!isFinished && !isStreaming && sttSupported) {
-        startListening();
-      }
+      // Ne PAS démarrer le micro automatiquement : Chrome bloque souvent
+      // l'API SpeechRecognition si elle n'est pas déclenchée par un clic direct.
+      // L'utilisateur doit appuyer sur le bouton micro pour parler.
     },
   });
 
@@ -158,6 +157,25 @@ const EntretienSession = () => {
       setUserSaidText((prev) => (prev ? prev + " " + transcript : transcript));
     },
   });
+
+  // Listen to speech recognition errors and show user-friendly toasts
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const err = (e as CustomEvent).detail as string;
+      const messages: Record<string, string> = {
+        "not-allowed": "Accès au micro refusé. Autorisez-le dans les paramètres du navigateur.",
+        "service-not-allowed": "Le micro est bloqué par votre navigateur.",
+        "no-speech": "Aucune parole détectée. Réessayez en parlant plus fort.",
+        "audio-capture": "Aucun micro détecté. Vérifiez votre matériel.",
+        "network": "Problème réseau pour la reconnaissance vocale.",
+        "aborted": "",
+      };
+      const msg = messages[err] ?? `Erreur micro : ${err}`;
+      if (msg) toast({ title: "Micro", description: msg, variant: "destructive" });
+    };
+    window.addEventListener("speech-recognition-error", handler);
+    return () => window.removeEventListener("speech-recognition-error", handler);
+  }, []);
 
   useEffect(() => {
     if (!config) navigate("/entretien-vocal");
