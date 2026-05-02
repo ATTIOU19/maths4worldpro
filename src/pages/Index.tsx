@@ -102,9 +102,7 @@ const Index = () => {
                 <span className="caret" />
               </span>
             </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Tuteur IA conversationnel · Réponse visuelle automatique · Adapté aux curricula africains · Évaluation orale
-            </p>
+            <div className="mb-10" />
 
             {/* Equation flottante */}
             <motion.div

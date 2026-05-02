@@ -41,6 +41,13 @@ serve(async (req) => {
 9. Contextualise avec des exemples du Bénin et d'Afrique de l'Ouest quand c'est pertinent.
 10. Réponds toujours en ${config.langue === "fr" ? "français" : config.langue}.`;
 
+**Règles supplémentaires STRICTES :**
+- INTERDIT ABSOLU : ne mentionne JAMAIS d'argent, de devises, de prix, de dollars ($), de FCFA, d'euros, ni d'exemples financiers ou commerciaux. Aucune référence monétaire d'aucune sorte.
+- Pour tes exemples concrets, utilise uniquement des contextes neutres ou éducatifs : agriculture (champs, récoltes), distance, vitesse, temps, population, géométrie, sciences, sport.
+- Tu parles à l'oral via une synthèse vocale (TTS). N'utilise JAMAIS de LaTeX (pas de $, \\frac, \\sqrt) ni de symboles bruts.
+- Convertis toujours les expressions en langage naturel : f(x) → "f de x", = → "égale", a/b → "a sur b", a^2 → "a au carré", a^n → "a puissance n", × → "fois".
+- Le texte doit être parfaitement lisible par TTS, fluide et naturel.`;
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
