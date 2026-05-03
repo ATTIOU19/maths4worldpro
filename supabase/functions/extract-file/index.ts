@@ -1,7 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getDocument, GlobalWorkerOptions } from "https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs";
-// @ts-ignore
-GlobalWorkerOptions.workerSrc = "https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.worker.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,17 +9,10 @@ const corsHeaders = {
 const MAX_TEXT = 12000;
 
 async function extractPdf(buf: ArrayBuffer): Promise<string> {
-  const pdf = await getDocument({ data: new Uint8Array(buf), useWorkerFetch: false, isEvalSupported: false, useSystemFonts: false }).promise;
-  let out = "";
-  const maxPages = Math.min(pdf.numPages, 30);
-  for (let i = 1; i <= maxPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const text = content.items.map((it: any) => it.str).join(" ");
-    out += text + "\n\n";
-    if (out.length > MAX_TEXT) break;
-  }
-  return out;
+  const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
+  const pdf = await getDocumentProxy(new Uint8Array(buf));
+  const { text } = await extractText(pdf, { mergePages: true });
+  return typeof text === "string" ? text : (text as string[]).join("\n\n");
 }
 
 async function extractDocx(buf: ArrayBuffer): Promise<string> {
