@@ -288,3 +288,20 @@
 .stat-animate {
   animation: count-up 0.6s ease-out forwards;
 }
+
+/* GeoGebra watermark / logo hiding & sizing */
+.ggb-container .GeoGebraFrame [class*="logo"],
+.ggb-container .GeoGebraFrame [class*="Logo"],
+.ggb-container .GeoGebraFrame .ggbsplash,
+.ggb-container [data-test="logo"],
+.ggb-container a[href*="geogebra.org"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.ggb-container, .ggb-container > div, .ggb-container article {
+  width: 100% !important;
+  background: transparent !important;
+}
