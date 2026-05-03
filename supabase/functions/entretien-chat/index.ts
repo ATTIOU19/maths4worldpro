@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, config } = await req.json();
+    const { messages, config, fileContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -48,6 +48,16 @@ serve(async (req) => {
 - Convertis toujours les expressions en langage naturel : f(x) se lit "f de x", = se lit "égale", a/b se lit "a sur b", a^2 se lit "a au carré", a^n se lit "a puissance n", × se lit "fois".
 - Le texte doit être parfaitement lisible par TTS, fluide et naturel.`;
 
+    const messagesWithContext = fileContext && messages.length > 0
+      ? [
+          ...messages.slice(0, -1),
+          {
+            role: messages[messages.length - 1].role,
+            content: `${messages[messages.length - 1].content}\n\n[Contexte du fichier joint]\n${fileContext}`,
+          },
+        ]
+      : messages;
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -60,7 +70,7 @@ serve(async (req) => {
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
-            ...messages,
+            ...messagesWithContext,
           ],
           stream: true,
         }),
