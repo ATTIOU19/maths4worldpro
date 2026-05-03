@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, Sparkles, BookOpen, ArrowRight } from "lucide-react";
+import { Send, Mic, Sparkles, BookOpen, ArrowRight, Download } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
@@ -8,6 +8,8 @@ import Navbar from "@/components/Navbar";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
+import { ExportMenu } from "@/components/chat/ExportMenu";
 
 const chartData = Array.from({ length: 61 }, (_, i) => {
   const x = (i - 30) / 10;
@@ -48,6 +50,7 @@ const TuteurIA = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [started, setStarted] = useState(false);
+  const [attached, setAttached] = useState<AttachedFile | null>(null);
 
   const showChart = step >= 2;
 
@@ -64,21 +67,25 @@ const TuteurIA = () => {
     if (isTyping || step >= conversationSteps.length || !input.trim()) return;
 
     const currentStep = conversationSteps[step];
+    const userText = attached
+      ? `${input.trim()}\n\n[Fichier joint : ${attached.name}]\n${attached.text.slice(0, 2000)}`
+      : input.trim();
     const userMsg: ChatMessage = {
       role: "user",
-      text: input.trim(),
+      text: attached ? `${input.trim()} 📎 ${attached.name}` : input.trim(),
       time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setAttached(null);
     setIsTyping(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("verify-answer", {
         body: {
           question: currentStep.ai.text,
-          userAnswer: userMsg.text,
+          userAnswer: userText,
           expectedConcept: currentStep.expectedConcept,
         },
       });
@@ -147,6 +154,16 @@ const TuteurIA = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">Tutrice IA en mathématiques</p>
               </div>
+              {messages.length > 0 && (
+                <div className="ml-auto">
+                  <ExportMenu
+                    title="Conversation Tuteur IA"
+                    messages={messages.map((m) => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }))}
+                    baseFilename="tuteur-ia"
+                    className="text-foreground"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -233,7 +250,15 @@ const TuteurIA = () => {
 
           {/* Input */}
           <div className="p-4 border-t border-border">
+            {attached && (
+              <div className="mb-2">
+                <FileUpload onFile={setAttached} attached={attached} onClear={() => setAttached(null)} />
+              </div>
+            )}
             <div className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 shadow-sm">
+              {!attached && started && !isConversationDone && (
+                <FileUpload onFile={setAttached} attached={null} onClear={() => setAttached(null)} disabled={isTyping} />
+              )}
               <input
                 type="text"
                 value={input}
