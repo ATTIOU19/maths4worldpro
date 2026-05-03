@@ -13,6 +13,7 @@ import Inscription from "./pages/Inscription";
 import Connexion from "./pages/Connexion";
 import ChatIA from "./pages/ChatIA";
 import Visualisation from "./pages/Visualisation";
+import NotionApprentissage from "./pages/NotionApprentissage";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "./components/RequireAuth";
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/entretien-vocal/session" element={<RequireAuth><EntretienSession /></RequireAuth>} />
           <Route path="/chat" element={<RequireAuth><ChatIA /></RequireAuth>} />
           <Route path="/visualisation" element={<RequireAuth><Visualisation /></RequireAuth>} />
+          <Route path="/notion" element={<RequireAuth><NotionApprentissage /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
