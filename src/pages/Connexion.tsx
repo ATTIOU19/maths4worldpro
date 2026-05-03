@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { LogIn, Eye, EyeOff } from "lucide-react";
-import MathSymbolsBackground from "@/components/MathSymbolsBackground";
+import AuthBackgroundVideo from "@/components/AuthBackgroundVideo";
 
 const Connexion = () => {
   const navigate = useNavigate();
@@ -35,18 +35,18 @@ const Connexion = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
-      <MathSymbolsBackground variant="light" count={16} opacity={0.06} />
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-[hsl(213_61%_8%)]">
+      <AuthBackgroundVideo />
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-black text-sm">M4W</span>
             </div>
-            <span className="text-foreground font-bold text-xl">MATHS4WORLD</span>
+            <span className="text-white font-bold text-xl">MATHS4WORLD</span>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground mt-4">Se connecter</h1>
-          <p className="text-muted-foreground mt-1">Accédez à votre espace Maths4World</p>
+          <h1 className="text-2xl font-bold text-white mt-4">Se connecter</h1>
+          <p className="text-white/70 mt-1">Accédez à votre espace Maths4World</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
