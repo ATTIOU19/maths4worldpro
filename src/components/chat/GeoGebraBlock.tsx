@@ -35,9 +35,9 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
     let cancelled = false;
 
     const params = {
-      appName: "geometry",
+      appName: "graphing",
       width: containerRef.current.clientWidth || 600,
-      height: 380,
+      height: 480,
       showToolBar: false,
       showAlgebraInput: false,
       showMenuBar: false,
@@ -47,6 +47,8 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       enableRightClick: false,
       showZoomButtons: true,
       showGrid: true,
+      showLogo: false,
+      borderColor: "#FFFFFF",
       capturingThreshold: null,
       errorDialogsActive: false,
       useBrowserForJS: false,
@@ -66,7 +68,12 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
               console.warn("GeoGebra command failed:", cmd, err);
             }
           }
-          api.setCoordSystem(-5, 5, -5, 5);
+          // Auto-fit view to all constructed objects
+          try {
+            api.evalCommand("ZoomFit()");
+          } catch {
+            try { api.setCoordSystem(-6, 6, -6, 6); } catch {}
+          }
         } catch (err) {
           console.error("GeoGebra init error:", err);
         }
@@ -85,11 +92,11 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
   }, [data.code]);
 
   return (
-    <div className="my-4 p-4 rounded-xl border border-border bg-background">
+    <div className="my-4 p-4 rounded-xl border border-border bg-background ggb-wrapper">
       {data.title && (
         <h4 className="text-sm font-semibold text-foreground mb-3 text-center">{data.title}</h4>
       )}
-      <div ref={containerRef} className="w-full overflow-hidden rounded-lg" />
+      <div ref={containerRef} className="w-full overflow-hidden rounded-lg ggb-container" />
       <p className="text-[11px] text-muted-foreground text-center mt-2">
         Figure interactive — déplacez les points pour explorer
       </p>
