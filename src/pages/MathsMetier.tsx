@@ -105,8 +105,7 @@ const MathsMetier = () => {
   const navigate = useNavigate();
 
   const handleLearn = (domaine: string, notion: string) => {
-    const prompt = `Explique-moi la notion "${notion}" dans le contexte du domaine "${domaine}". Donne des exemples concrets liés à ce métier.`;
-    navigate(`/chat?prompt=${encodeURIComponent(prompt)}`);
+    navigate(`/notion?domaine=${encodeURIComponent(domaine)}&notion=${encodeURIComponent(notion)}`);
   };
 
   return (

@@ -46,6 +46,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       enableShiftDragZoom: true,
       enableRightClick: false,
       showZoomButtons: true,
+      showGrid: true,
       capturingThreshold: null,
       errorDialogsActive: false,
       useBrowserForJS: false,
@@ -54,6 +55,10 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
         appletReady = true;
         try {
           api.reset();
+          try {
+            api.setGridVisible(true);
+            api.setAxesVisible(true, true);
+          } catch {}
           for (const cmd of splitCommands(data.code)) {
             try {
               api.evalCommand(cmd);
