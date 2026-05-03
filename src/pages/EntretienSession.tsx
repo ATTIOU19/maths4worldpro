@@ -490,7 +490,14 @@ const EntretienSession = () => {
 
             {/* Main action area */}
             {!isFinished ? (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center gap-4">
+                {attached && (
+                  <FileUpload onFile={setAttached} attached={attached} onClear={() => setAttached(null)} />
+                )}
+                <div className="flex items-center gap-4">
+                {!attached && (
+                  <FileUpload onFile={setAttached} attached={null} onClear={() => setAttached(null)} disabled={isStreaming} />
+                )}
                 {/* Mic button */}
                 <motion.button
                   whileTap={{ scale: 0.9 }}
@@ -522,6 +529,7 @@ const EntretienSession = () => {
                     Envoyer
                   </motion.button>
                 )}
+                </div>
               </div>
             ) : (
               <motion.div
