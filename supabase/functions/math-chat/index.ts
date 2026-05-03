@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, fileContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -24,39 +24,23 @@ serve(async (req) => {
 - N'écris JAMAIS de formule en texte brut. TOUJOURS en LaTeX.
 
 **GRAPHIQUES ET VISUALISATIONS (TRÈS IMPORTANT) :**
-Quand tu dois montrer une courbe ou un graphique de fonction, utilise un bloc \`\`\`graph avec du JSON. Le système le transformera automatiquement en graphique interactif style GeoGebra.
+Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et les courbes. Pas de SVG, pas de Three.js, pas de function-plot.
 
-Format obligatoire :
-\`\`\`graph
-{
-  "title": "Courbe de f(x) = x²",
-  "functions": ["x^2"],
-  "xDomain": [-5, 5],
-  "yDomain": [-2, 10]
-}
+**Format OBLIGATOIRE** (un bloc \`\`\`geogebra contenant ce JSON) :
+\`\`\`geogebra
+{"type":"geogebra","title":"Titre","code":"A=(0,0); B=(3,0); C=(1,2); Polygon(A,B,C)"}
 \`\`\`
 
-Pour plusieurs fonctions sur le même graphique :
-\`\`\`graph
-{
-  "title": "Comparaison f et g",
-  "functions": ["sin(x)", "cos(x)"],
-  "xDomain": [-6.28, 6.28],
-  "yDomain": [-1.5, 1.5]
-}
-\`\`\`
-
-**SYNTAXE DES EXPRESSIONS (function-plot) :**
-- Puissance : x^2, x^3
-- Racine carrée : sqrt(x)
-- Exponentielle : exp(x) ou e^x
-- Logarithme : log(x) (népérien)
-- Trigonométrie : sin(x), cos(x), tan(x)
-- Valeur absolue : abs(x)
+**Syntaxe GeoGebra :**
+- Point : A=(0,0)
+- Segment : Segment(A,B)
+- Polygone : Polygon(A,B,C,D)
+- Cercle : Circle(A,2)
+- Fonction : f(x)=x^2, g(x)=sin(x), h(x)=exp(x), k(x)=log(x), abs(x), sqrt(x)
 - Constantes : pi, e
-- Combinaisons : sin(x) * exp(-x/5), x^2 - 3*x + 2
+- Plusieurs commandes séparées par ;
 
-RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`graph\`\`\` dans chaque réponse qui concerne une fonction, une suite, des statistiques ou tout concept visualisable. Utilise aussi des tableaux markdown en complément.
+**RÈGLE :** Inclus au moins UN bloc \`\`\`geogebra\`\`\` dès qu'une figure, une fonction, une suite ou un concept est visualisable. Les points doivent être manipulables.
 
 **Format de tes réponses (OBLIGATOIRE) :**
 
@@ -67,7 +51,7 @@ RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`graph\`\`\` dans cha
    - Des **formules LaTeX** ($...$ et $$...$$)
    - Des **tableaux markdown** quand utile
 
-3. **📊 Visualisation** — Inclus OBLIGATOIREMENT un graphique interactif avec le bloc \`\`\`graph\`\`\` ET/OU un tableau de valeurs markdown.
+3. **📊 Visualisation** — Inclus OBLIGATOIREMENT un bloc \`\`\`geogebra\`\`\` quand c'est visualisable.
 
 4. **🌍 Exemple concret** — Un exemple ancré dans le contexte africain (marché, agriculture, architecture, artisanat...).
 
@@ -92,6 +76,16 @@ RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`graph\`\`\` dans cha
 - Adapte le niveau (primaire → université)
 - Si hors-sujet maths, redirige poliment`;
 
+    const messagesWithContext = fileContext
+      ? [
+          ...messages.slice(0, -1),
+          {
+            role: messages[messages.length - 1].role,
+            content: `${messages[messages.length - 1].content}\n\n[Contexte du fichier joint]\n${fileContext}`,
+          },
+        ]
+      : messages;
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -104,7 +98,7 @@ RÈGLE : Inclus OBLIGATOIREMENT au moins UN graphique \`\`\`graph\`\`\` dans cha
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
-            ...messages,
+            ...messagesWithContext,
           ],
           stream: true,
         }),

@@ -22,10 +22,16 @@ type GraphData = {
   yDomain?: [number, number];
 };
 
+export type GeoGebraBlockData = {
+  title?: string;
+  code: string;
+};
+
 type ParsedPart = {
   before: string;
   chart: ChartData | null;
   graph: GraphData | null;
+  geogebra: GeoGebraBlockData | null;
   after: string;
 };
 
@@ -43,30 +49,37 @@ const COLORS = [
 /* ── Parsing ── */
 
 export function parseChartBlocks(text: string): ParsedPart[] {
-  const regex = /```(?:chart|graph)\s*\n([\s\S]*?)\n```/g;
+  const regex = /```(?:chart|graph|geogebra)\s*\n([\s\S]*?)\n```/g;
   const parts: ParsedPart[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
     const before = text.slice(lastIndex, match.index);
-    const blockType = match[0].startsWith("```graph") ? "graph" : "chart";
+    const blockType = match[0].startsWith("```geogebra")
+      ? "geogebra"
+      : match[0].startsWith("```graph")
+      ? "graph"
+      : "chart";
     try {
       const parsed = JSON.parse(match[1]);
-      if (blockType === "graph" || parsed.functions) {
-        parts.push({ before, chart: null, graph: parsed as GraphData, after: "" });
+      if (blockType === "geogebra" || parsed.type === "geogebra" || (typeof parsed.code === "string" && !parsed.functions && !parsed.data)) {
+        const ggb: GeoGebraBlockData = { title: parsed.title, code: parsed.code };
+        parts.push({ before, chart: null, graph: null, geogebra: ggb, after: "" });
+      } else if (blockType === "graph" || parsed.functions) {
+        parts.push({ before, chart: null, graph: parsed as GraphData, geogebra: null, after: "" });
       } else {
-        parts.push({ before, chart: parsed as ChartData, graph: null, after: "" });
+        parts.push({ before, chart: parsed as ChartData, graph: null, geogebra: null, after: "" });
       }
     } catch {
-      parts.push({ before: before + match[0], chart: null, graph: null, after: "" });
+      parts.push({ before: before + match[0], chart: null, graph: null, geogebra: null, after: "" });
     }
     lastIndex = match.index + match[0].length;
   }
 
   const remaining = text.slice(lastIndex);
   if (parts.length === 0) {
-    parts.push({ before: remaining, chart: null, graph: null, after: "" });
+    parts.push({ before: remaining, chart: null, graph: null, geogebra: null, after: "" });
   } else {
     parts[parts.length - 1].after = remaining;
   }

@@ -4,6 +4,8 @@ import { Send, ArrowLeft, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
+import { ExportMenu } from "@/components/chat/ExportMenu";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -21,10 +23,12 @@ const SUGGESTIONS = [
 
 async function streamChat({
   messages,
+  fileContext,
   onDelta,
   onDone,
 }: {
   messages: Msg[];
+  fileContext?: string;
   onDelta: (t: string) => void;
   onDone: () => void;
 }) {
@@ -34,7 +38,7 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, fileContext }),
   });
 
   if (resp.status === 429) {
@@ -81,6 +85,7 @@ const ChatIA = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attached, setAttached] = useState<AttachedFile | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,11 +94,14 @@ const ChatIA = () => {
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
-    const userMsg: Msg = { role: "user", content: text.trim() };
+    const visible = attached ? `${text.trim()}\n\n📎 ${attached.name}` : text.trim();
+    const userMsg: Msg = { role: "user", content: visible };
     const updated = [...messages, userMsg];
     setMessages(updated);
     setInput("");
     setLoading(true);
+    const fileCtx = attached?.text;
+    setAttached(null);
 
     let assistantSoFar = "";
     const upsert = (chunk: string) => {
@@ -110,6 +118,7 @@ const ChatIA = () => {
     try {
       await streamChat({
         messages: updated,
+        fileContext: fileCtx,
         onDelta: upsert,
         onDone: () => setLoading(false),
       });
@@ -139,13 +148,16 @@ const ChatIA = () => {
           <p className="text-xs opacity-70">Pose ta question de maths</p>
         </div>
         {messages.length > 0 && (
-          <button
-            onClick={() => setMessages([])}
-            className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
-            title="Nouvelle conversation"
-          >
-            <Trash2 size={18} />
-          </button>
+          <>
+            <ExportMenu title="Conversation Chat IA" messages={messages} baseFilename="chat-ia" />
+            <button
+              onClick={() => setMessages([])}
+              className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
+              title="Nouvelle conversation"
+            >
+              <Trash2 size={18} />
+            </button>
+          </>
         )}
       </header>
 
@@ -194,7 +206,14 @@ const ChatIA = () => {
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="shrink-0 border-t border-border bg-card px-4 py-3">
-        <div className="flex gap-2 max-w-3xl mx-auto">
+        <div className="flex flex-col gap-2 max-w-3xl mx-auto">
+          {attached && (
+            <FileUpload onFile={setAttached} attached={attached} onClear={() => setAttached(null)} />
+          )}
+          <div className="flex gap-2">
+          {!attached && (
+            <FileUpload onFile={setAttached} attached={null} onClear={() => setAttached(null)} disabled={loading} />
+          )}
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -205,6 +224,7 @@ const ChatIA = () => {
           <Button type="submit" size="icon" className="h-11 w-11 rounded-xl" disabled={loading || !input.trim()}>
             <Send size={18} />
           </Button>
+          </div>
         </div>
       </form>
     </div>
