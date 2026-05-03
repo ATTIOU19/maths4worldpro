@@ -4,6 +4,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { parseChartBlocks, ChartBlock, FunctionPlotBlock } from "./ChartRenderer";
+import { GeoGebraBlock } from "./GeoGebraBlock";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -34,6 +35,7 @@ export function MessageBubble({ msg }: { msg: Msg }) {
             )}
             {part.graph && <FunctionPlotBlock graph={part.graph} />}
             {part.chart && <ChartBlock chart={part.chart} />}
+            {part.geogebra && <GeoGebraBlock data={part.geogebra} />}
             {part.after && (
               <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
