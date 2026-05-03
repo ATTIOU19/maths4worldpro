@@ -4,6 +4,8 @@ import { ArrowLeft, Sparkles, Send, Trash2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
+import { ExportMenu } from "@/components/chat/ExportMenu";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -21,10 +23,12 @@ const SUGGESTIONS = [
 
 async function streamVisualize({
   prompt,
+  fileContext,
   onDelta,
   onDone,
 }: {
   prompt: string;
+  fileContext?: string;
   onDelta: (t: string) => void;
   onDone: () => void;
 }) {
@@ -34,7 +38,7 @@ async function streamVisualize({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, fileContext }),
   });
 
   if (resp.status === 429) {
@@ -79,8 +83,10 @@ async function streamVisualize({
 
 const Visualisation = () => {
   const [result, setResult] = useState<Msg | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string>("");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attached, setAttached] = useState<AttachedFile | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,9 +97,12 @@ const Visualisation = () => {
 
   const generate = async (text: string) => {
     if (!text.trim() || loading) return;
+    setLastPrompt(text.trim());
     setInput("");
     setResult(null);
     setLoading(true);
+    const fileCtx = attached?.text;
+    setAttached(null);
 
     let content = "";
     const update = (chunk: string) => {
@@ -104,6 +113,7 @@ const Visualisation = () => {
     try {
       await streamVisualize({
         prompt: text.trim(),
+        fileContext: fileCtx,
         onDelta: update,
         onDone: () => setLoading(false),
       });
@@ -133,13 +143,23 @@ const Visualisation = () => {
           <p className="text-xs opacity-70">Décris ce que tu veux visualiser</p>
         </div>
         {result && (
-          <button
-            onClick={() => setResult(null)}
-            className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
-            title="Effacer"
-          >
-            <Trash2 size={18} />
-          </button>
+          <>
+            <ExportMenu
+              title={`Visualisation : ${lastPrompt || ""}`}
+              messages={[
+                { role: "user", content: lastPrompt },
+                { role: "assistant", content: result.content },
+              ]}
+              baseFilename="visualisation"
+            />
+            <button
+              onClick={() => setResult(null)}
+              className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
+              title="Effacer"
+            >
+              <Trash2 size={18} />
+            </button>
+          </>
         )}
       </header>
 
@@ -189,7 +209,14 @@ const Visualisation = () => {
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="shrink-0 border-t border-border bg-card px-4 py-3">
-        <div className="flex gap-2 max-w-3xl mx-auto">
+        <div className="flex flex-col gap-2 max-w-3xl mx-auto">
+          {attached && (
+            <FileUpload onFile={setAttached} attached={attached} onClear={() => setAttached(null)} />
+          )}
+          <div className="flex gap-2">
+          {!attached && (
+            <FileUpload onFile={setAttached} attached={null} onClear={() => setAttached(null)} disabled={loading} />
+          )}
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -200,6 +227,7 @@ const Visualisation = () => {
           <Button type="submit" size="icon" className="h-11 w-11 rounded-xl" disabled={loading || !input.trim()}>
             <Send size={18} />
           </Button>
+          </div>
         </div>
       </form>
     </div>
