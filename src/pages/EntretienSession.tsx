@@ -7,6 +7,8 @@ import Navbar from "@/components/Navbar";
 import { toast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
+import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
+import { ExportMenu } from "@/components/chat/ExportMenu";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -24,12 +26,14 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/entretien-ch
 async function streamChat({
   messages,
   config,
+  fileContext,
   onDelta,
   onDone,
   onError,
 }: {
   messages: ChatMessage[];
   config: InterviewConfig;
+  fileContext?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (err: string) => void;
@@ -40,7 +44,7 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, config }),
+    body: JSON.stringify({ messages, config, fileContext }),
   });
 
   if (!resp.ok) {
@@ -129,6 +133,7 @@ const EntretienSession = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [currentAiText, setCurrentAiText] = useState("");
   const [userSaidText, setUserSaidText] = useState("");
+  const [attached, setAttached] = useState<AttachedFile | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastSpokenRef = useRef<string>("");
 
@@ -209,7 +214,7 @@ const EntretienSession = () => {
 
   // Send AI request with streaming
   const sendToAI = useCallback(
-    (msgs: ChatMessage[], endAfter = false) => {
+    (msgs: ChatMessage[], endAfter = false, fileContext?: string) => {
       if (!config) return;
       setIsStreaming(true);
       stopSpeaking();
@@ -231,6 +236,7 @@ const EntretienSession = () => {
       streamChat({
         messages: finalMsgs,
         config,
+        fileContext,
         onDelta: (chunk) => {
           assistantSoFar += chunk;
           setCurrentAiText(assistantSoFar);
@@ -281,8 +287,11 @@ const EntretienSession = () => {
     if (!text || isStreaming || isFinished || !config) return;
 
     stopListening();
+    const fileCtx = attached?.text;
+    const visibleText = attached ? `${text}\n📎 ${attached.name}` : text;
     setUserSaidText("");
-    setDisplayMessages((prev) => [...prev, { role: "user", content: text }]);
+    setAttached(null);
+    setDisplayMessages((prev) => [...prev, { role: "user", content: visibleText }]);
 
     const updatedApiMsgs: ChatMessage[] = [
       ...apiMessagesRef.current,
@@ -292,8 +301,8 @@ const EntretienSession = () => {
     const aiCount = displayMessages.filter((m) => m.role === "ai").length;
     const shouldEnd = aiCount >= 6 || timeLeft < 60;
 
-    sendToAI(updatedApiMsgs, shouldEnd);
-  }, [userSaidText, isStreaming, isFinished, config, stopListening, displayMessages, timeLeft, sendToAI]);
+    sendToAI(updatedApiMsgs, shouldEnd, fileCtx);
+  }, [userSaidText, isStreaming, isFinished, config, stopListening, displayMessages, timeLeft, sendToAI, attached]);
 
   const handleEndEarly = () => {
     if (!config || isStreaming) return;
@@ -363,6 +372,14 @@ const EntretienSession = () => {
             >
               <MessageSquare size={16} className={showTranscript ? "text-accent" : "text-muted-foreground"} />
             </button>
+            {displayMessages.length > 0 && (
+              <ExportMenu
+                title={`Entretien : ${config.notion}`}
+                messages={displayMessages.map((m) => ({ role: m.role === "ai" ? "assistant" : "user", content: m.content }))}
+                baseFilename="entretien-vocal"
+                className="text-foreground"
+              />
+            )}
             {!isFinished && (
               <button
                 onClick={handleEndEarly}
