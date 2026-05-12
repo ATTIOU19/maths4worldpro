@@ -305,3 +305,18 @@
   width: 100% !important;
   background: transparent !important;
 }
+
+.ggb-container iframe,
+.ggb-container canvas,
+.ggb-container .GeoGebraFrame {
+  width: 100% !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+}
+
+/* Hide algebra/side panels if they slip through */
+.ggb-container [class*="algebraView"],
+.ggb-container [class*="AlgebraView"],
+.ggb-container [class*="sidePanel"] {
+  display: none !important;
+}
