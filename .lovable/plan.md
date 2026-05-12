@@ -1,45 +1,34 @@
-## Objectif
-Rendre le graphe GeoGebra de la page **Visualisation** plus grand, plus lisible et plus élégant.
+## Problème observé
+La capture montre un canvas presque entièrement blanc : la courbe n'est pas visible et le quadrillage n'apparaît qu'à l'extrême droite. Causes probables :
+1. `ZoomFit()` ne cadre pas correctement les fonctions (GeoGebra ne connaît pas leurs bornes naturelles) → la courbe est tracée hors champ.
+2. `setColor` / `setLineThickness` peuvent échouer silencieusement selon le type d'objet (fonction vs polygone).
+3. La grille par défaut est trop pâle, sans distinction majeur/mineur.
 
-## Constats (capture actuelle)
-- Le graphe occupe ~40% de la largeur de la bulle, le reste est vide.
-- La bulle assistant est limitée à `max-w-[70%]` → bride la figure.
-- Hauteur 480px mais le canvas réel est rétréci par le panneau algèbre latéral (f(x)=…, A=(0,1)) qui consomme la moitié horizontale.
-- Boutons zoom empilés au milieu, fond gris fade, peu de contraste.
+## Plan de corrections (`src/components/chat/GeoGebraBlock.tsx` uniquement)
 
-## Plan de modifications
+### 1. Cadrage fiable
+- Toujours appeler `api.setCoordSystem(-10, 10, -6, 6)` **par défaut** (au lieu de seulement en fallback).
+- Pour chaque objet de type `point`, élargir la fenêtre pour l'inclure (calcul min/max sur `getXcoord`/`getYcoord` + marge).
+- Pour les fonctions, garder la fenêtre par défaut [-10,10]×[-6,6] (ou symétrique adaptée).
+- Supprimer l'appel `ZoomFit()` qui échoue sur les fonctions.
 
-### 1. `src/components/chat/MessageBubble.tsx`
-Quand le message contient un bloc `geogebra`, élargir la bulle :
-- Passer `max-w-[70%]` → `max-w-[95%]` (ou pleine largeur) uniquement pour les messages contenant un graphe.
-- Garder le style actuel pour les messages texte.
+### 2. Grille élégante (style "cahier de maths")
+- `api.setGridVisible(true)` + `api.setAxesVisible(true, true)`
+- Grille cartésienne avec lignes majeures/mineures :
+  - `api.evalCommand("SetActiveView(1)")`
+  - Forcer `gridType = 1` (cartésien) et `gridDistance = {1,1}` via JS API si dispo.
+- Couleur grille douce (HSL ~ 210 20% 88%), axes sombres (foreground), épaisseur axes 2.
 
-### 2. `src/components/chat/GeoGebraBlock.tsx`
-Reconfigurer l'applet pour un rendu "premium" :
-- `appName: "graphing"` (déjà OK)
-- **Masquer le panneau algèbre latéral** : `showAlgebraInput: false` + `perspective: "G"` (vue graphique seule) → libère toute la largeur pour la figure.
-- **Hauteur responsive** : 520px desktop, 380px mobile (calcul via `clientWidth`).
-- **Largeur 100%** du conteneur élargi.
-- **Désactiver les boutons zoom flottants** (`showZoomButtons: false`) — déplacement/zoom restent dispo via molette/pinch.
-- `showToolBarHelp: false`, `showFullscreenButton: true` (élégant, en coin).
-- Couleurs : `borderColor: "transparent"`, axes/grille en HSL semantic via post-init :
-  - axes plus épais et couleur foreground
-  - grille discrète (couleur muted)
-  - courbe : couleur primary du design system (épaisseur 5)
-- Padding intérieur du wrapper réduit, ombre douce + bordure semantic, fond `card`.
-- Re-render sur resize fenêtre (ResizeObserver) pour rester net.
+### 3. Courbe & objets bien visibles
+- Pour les fonctions : `api.setColor(name, 26, 60, 110)` (primary) + `api.setLineThickness(name, 8)` + `api.setLineStyle(name, 0)` (plein).
+- Pour les polygones : remplissage primary à 25% via `api.setFilling(name, 0.25)`.
+- Points : couleur secondary (#2A8BCB), taille 7, label visible.
+- Try/catch individuels (déjà en place) — on garde.
 
-### 3. `src/index.css`
-- S'assurer que `.ggb-container iframe` prend `width: 100% !important`.
-- Forcer fond transparent sur les éléments internes GeoGebra restants.
-- Petites règles pour adoucir les coins du canvas (`border-radius: 12px`).
-
-## Détails techniques
-- Couleur courbe via `api.setColor("f", r, g, b)` après `evalCommand`.
-- Épaisseur via `api.setLineThickness("f", 5)`.
-- Grille/axes via `api.setGridVisible(true)` + `setAxesColor` (si dispo) sinon style CSS sur SVG interne.
-- Pas de changement côté edge function `visualize` — le format de réponse reste identique.
+### 4. Fond & rendu
+- `containerRef` fond blanc explicite (#FFFFFF) pour contraste max sur la courbe bleue.
+- Réduire un peu la hauteur sur viewport étroit pour éviter le scroll vertical de la bulle.
 
 ## Hors scope
-- Pas de modification du prompt système ni du modèle IA.
-- Pas de changement sur ChatIA/TuteurIA (uniquement page Visualisation, mais comme le composant est partagé, le rendu y sera amélioré aussi — comportement souhaité, à confirmer si non).
+- Pas de changement du prompt edge function ni de `MessageBubble`.
+- Pas de changement sur d'autres pages.
