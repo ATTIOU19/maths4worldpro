@@ -1,87 +1,45 @@
-## 4 modifications demandées
+## Objectif
+Rendre le graphe GeoGebra de la page **Visualisation** plus grand, plus lisible et plus élégant.
 
-### 1. Page d'accueil — retirer la ligne descriptive
+## Constats (capture actuelle)
+- Le graphe occupe ~40% de la largeur de la bulle, le reste est vide.
+- La bulle assistant est limitée à `max-w-[70%]` → bride la figure.
+- Hauteur 480px mais le canvas réel est rétréci par le panneau algèbre latéral (f(x)=…, A=(0,1)) qui consomme la moitié horizontale.
+- Boutons zoom empilés au milieu, fond gris fade, peu de contraste.
 
-Dans `src/pages/Index.tsx`, supprimer le paragraphe :
+## Plan de modifications
 
-> « Tuteur IA conversationnel · Réponse visuelle automatique · Adapté aux curricula africains · Évaluation orale »
+### 1. `src/components/chat/MessageBubble.tsx`
+Quand le message contient un bloc `geogebra`, élargir la bulle :
+- Passer `max-w-[70%]` → `max-w-[95%]` (ou pleine largeur) uniquement pour les messages contenant un graphe.
+- Garder le style actuel pour les messages texte.
 
-### 2. Tuteur IA — retirer les sélecteurs niveau et pays
+### 2. `src/components/chat/GeoGebraBlock.tsx`
+Reconfigurer l'applet pour un rendu "premium" :
+- `appName: "graphing"` (déjà OK)
+- **Masquer le panneau algèbre latéral** : `showAlgebraInput: false` + `perspective: "G"` (vue graphique seule) → libère toute la largeur pour la figure.
+- **Hauteur responsive** : 520px desktop, 380px mobile (calcul via `clientWidth`).
+- **Largeur 100%** du conteneur élargi.
+- **Désactiver les boutons zoom flottants** (`showZoomButtons: false`) — déplacement/zoom restent dispo via molette/pinch.
+- `showToolBarHelp: false`, `showFullscreenButton: true` (élégant, en coin).
+- Couleurs : `borderColor: "transparent"`, axes/grille en HSL semantic via post-init :
+  - axes plus épais et couleur foreground
+  - grille discrète (couleur muted)
+  - courbe : couleur primary du design system (épaisseur 5)
+- Padding intérieur du wrapper réduit, ombre douce + bordure semantic, fond `card`.
+- Re-render sur resize fenêtre (ResizeObserver) pour rester net.
 
-Dans `src/pages/TuteurIA.tsx` (en-tête du chat) :
+### 3. `src/index.css`
+- S'assurer que `.ggb-container iframe` prend `width: 100% !important`.
+- Forcer fond transparent sur les éléments internes GeoGebra restants.
+- Petites règles pour adoucir les coins du canvas (`border-radius: 12px`).
 
-- Supprimer les deux `<select>` (Terminale C/D / Première / … et 🇧🇯 Bénin / 🇸🇳 Sénégal / …).
-- Garder uniquement l'avatar « Amara » et son statut « En ligne ».
+## Détails techniques
+- Couleur courbe via `api.setColor("f", r, g, b)` après `evalCommand`.
+- Épaisseur via `api.setLineThickness("f", 5)`.
+- Grille/axes via `api.setGridVisible(true)` + `setAxesColor` (si dispo) sinon style CSS sur SVG interne.
+- Pas de changement côté edge function `visualize` — le format de réponse reste identique.
 
-### 3. Entretien vocal — supprimer toute mention de dollars / FCFA / argent
-
-Dans `supabase/functions/entretien-chat/index.ts`, ajouter une règle stricte au `systemPrompt` :
-
-- « Tu es un assistant pédagogique qui explique les mathématiques à l’oral.
-  Règles STRICTES :
-  - N’utilise JAMAIS de LaTeX (pas de $, \frac, \sqrt, etc.)
-  - N’utilise pas de notation mathématique brute
-  - Transforme toujours les expressions en langage naturel, comme si tu parlais à un élève
-  Règles de conversion :
-  - f(x) → "f de x"
-  - = → "égale"
-  - / → "sur"
-  - a - b → "a moins b"
-  - a + b → "a plus b"
-  - a × b → "a fois b"
-  - a^2 → "a au carré"
-  - a^n → "a puissance n"
-  Exemples :
-  - f(x)=2/(2-x) → "f de x égale deux sur deux moins x"
-  - x^2 + 3x → "x au carré plus trois x"
-  Important :
-  - Le texte doit être parfaitement lisible par une synthèse vocale (TTS)
-  - Ne lis jamais les symboles comme "$" ou "\" ou caractère par caractère
-  - Toujours privilégier une phrase naturelle et fluide
-  Objectif :
-  Produire une réponse compréhensible à l’oral, naturelle et fluide, sans symboles techniques.»
-- Re-déployer la fonction `entretien-chat` automatiquement après modification.
-
-### 4. Authentification obligatoire avant l'accès au site
-
-Aujourd'hui `/` (accueil) est accessible sans compte. Mettre en place une **garde d'authentification globale** :
-
-- Créer `src/components/RequireAuth.tsx` :
-  - Écoute `supabase.auth.onAuthStateChange` + `getSession()` (listener AVANT getSession, conformément aux bonnes pratiques).
-  - Si pas de session → `<Navigate to="/connexion" replace />`.
-  - Si session → rend les enfants.
-  - Affiche un petit loader pendant la vérification initiale.
-- Dans `src/App.tsx`, envelopper toutes les routes protégées avec `RequireAuth`. Routes **publiques** (non protégées) :
-  - `/connexion`
-  - `/inscription`
-  - `*` (NotFound)
-  Routes **protégées** (nécessitent un compte) :
-  - `/` (Accueil)
-  - `/tuteur-ia`, `/maths-metier`, `/a-propos`
-  - `/entretien-vocal`, `/entretien-vocal/session`
-  - `/chat`, `/visualisation`
-- Sur `/connexion` et `/inscription`, après succès, rediriger vers `/`.
-
-```text
-Visiteur ──► / ──► RequireAuth ──► session ?
-                                    │
-                       non ─────────┴───────── oui
-                        ▼                       ▼
-                  /connexion                Accueil
-```
-
-### Fichiers modifiés / créés
-
-- `src/pages/Index.tsx` — suppression du sous-titre.
-- `src/pages/TuteurIA.tsx` — suppression des deux selects.
-- `supabase/functions/entretien-chat/index.ts` — règle « pas d'argent ».
-- `src/components/RequireAuth.tsx` — **nouveau**.
-- `src/App.tsx` — wrapping des routes protégées.
-- (Vérification rapide que `Connexion.tsx` / `Inscription.tsx` redirigent bien vers `/` après succès — sinon ajustement minimal.)
-
-### Résultat attendu
-
-- Accueil épuré sans la ligne marketing.
-- Tuteur IA sans menus déroulants superflus.
-- Amara ne parle plus jamais d'argent pendant les entretiens.
-- Toute personne qui ouvre le lien de l'app est redirigée vers `/connexion` tant qu'elle n'a pas de compte / n'est pas connectée.
+## Hors scope
+- Pas de modification du prompt système ni du modèle IA.
+- Pas de changement sur ChatIA/TuteurIA (uniquement page Visualisation, mais comme le composant est partagé, le rendu y sera amélioré aussi — comportement souhaité, à confirmer si non).
