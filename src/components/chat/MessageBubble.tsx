@@ -20,10 +20,11 @@ export function MessageBubble({ msg }: { msg: Msg }) {
   }
 
   const parts = parseChartBlocks(msg.content);
+  const hasVisual = parts.some((p) => p.geogebra || p.graph || p.chart);
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[85%] md:max-w-[70%] px-4 py-3 chat-bubble-ai">
+      <div className={`${hasVisual ? "max-w-[98%] md:max-w-[95%] w-full" : "max-w-[85%] md:max-w-[70%]"} px-4 py-3 chat-bubble-ai`}>
         {parts.map((part, i) => (
           <div key={i}>
             {part.before && (
