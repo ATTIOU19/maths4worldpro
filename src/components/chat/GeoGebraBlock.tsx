@@ -173,9 +173,8 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           const extend = (x: number, y: number) => {
             if (Number.isFinite(x) && Number.isFinite(y)) { xs.push(x); ys.push(y); }
           };
-          let framedCircleFromCommand = false;
           if (!is3D) {
-            for (const cmd of commands) framedCircleFromCommand = extendCircleFromCommand(api, cmd, extend) || framedCircleFromCommand;
+            for (const cmd of commands) extendCircleFromCommand(api, cmd, extend);
           }
           try {
             const names: string[] = api.getAllObjectNames() || [];
