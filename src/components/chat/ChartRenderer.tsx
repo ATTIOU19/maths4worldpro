@@ -25,6 +25,7 @@ type GraphData = {
 export type GeoGebraBlockData = {
   title?: string;
   code: string;
+  dim?: "2d" | "3d";
 };
 
 type ParsedPart = {
@@ -64,7 +65,11 @@ export function parseChartBlocks(text: string): ParsedPart[] {
     try {
       const parsed = JSON.parse(match[1]);
       if (blockType === "geogebra" || parsed.type === "geogebra" || (typeof parsed.code === "string" && !parsed.functions && !parsed.data)) {
-        const ggb: GeoGebraBlockData = { title: parsed.title, code: parsed.code };
+        const ggb: GeoGebraBlockData = {
+          title: parsed.title,
+          code: parsed.code,
+          dim: parsed.dim === "3d" ? "3d" : "2d",
+        };
         parts.push({ before, chart: null, graph: null, geogebra: ggb, after: "" });
       } else if (blockType === "graph" || parsed.functions) {
         parts.push({ before, chart: null, graph: parsed as GraphData, geogebra: null, after: "" });
