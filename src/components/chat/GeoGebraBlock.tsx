@@ -104,6 +104,61 @@ function extendCircleFromCommand(api: any, cmd: string, extend: (x: number, y: n
   return false;
 }
 
+function circleFallbackCommands(api: any, cmd: string): string[] {
+  const match = cmd.match(/(?:(\w+)\s*=\s*)?Circle\s*\((.*)\)\s*$/i);
+  if (!match) return [];
+  const [, name, rawArgs] = match;
+  const args = splitArgs(rawArgs);
+  const withoutAssignment = `Circle(${rawArgs})`;
+  const oldSyntax = `Circle[${rawArgs}]`;
+  const fallbacks = [withoutAssignment, oldSyntax];
+  const center = getPoint2D(api, args[0] || "");
+  if (args.length === 2 && center) {
+    const radius = getNumericValue(api, args[1]);
+    const boundary = getPoint2D(api, args[1]);
+    const r = radius ?? (boundary ? Math.hypot(boundary.x - center.x, boundary.y - center.y) : null);
+    if (r && Number.isFinite(r)) {
+      const prefix = name ? `${name}: ` : "";
+      fallbacks.push(`${prefix}(x - ${center.x})^2 + (y - ${center.y})^2 = ${Math.abs(r) ** 2}`);
+    }
+  }
+  if (args.length === 3) {
+    const pts = args.map((arg) => getPoint2D(api, arg));
+    if (pts.every(Boolean)) {
+      const circle = circumcircle(pts as { x: number; y: number }[]);
+      if (circle) {
+        const prefix = name ? `${name}: ` : "";
+        fallbacks.push(`${prefix}(x - ${circle.x})^2 + (y - ${circle.y})^2 = ${circle.r ** 2}`);
+      }
+    }
+  }
+  return fallbacks;
+}
+
+function evalGeoGebraCommand(api: any, cmd: string): boolean {
+  try {
+    const result = api.evalCommand(cmd);
+    if (result !== false) return true;
+  } catch {}
+
+  const normalized = cmd.replace(/^(\w+)\s*=\s*/, "$1: ");
+  if (normalized !== cmd) {
+    try {
+      const result = api.evalCommand(normalized);
+      if (result !== false) return true;
+    } catch {}
+  }
+
+  for (const fallback of circleFallbackCommands(api, cmd)) {
+    try {
+      const result = api.evalCommand(fallback);
+      if (result !== false) return true;
+    } catch {}
+  }
+  console.warn("GeoGebra command failed:", cmd);
+  return false;
+}
+
 export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -152,6 +207,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
         try {
           api.reset();
           try {
+            api.setPerspective(is3D ? "T" : "G");
             api.setGridVisible(true);
             api.setAxesVisible(true, true);
             // Set default 2D coord system; 3D laisse GeoGebra gérer la caméra
@@ -159,11 +215,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           } catch {}
           const commands = splitCommands(data.code);
           for (const cmd of commands) {
-            try {
-              api.evalCommand(cmd);
-            } catch (err) {
-              console.warn("GeoGebra command failed:", cmd, err);
-            }
+            evalGeoGebraCommand(api, cmd);
           }
           // Style every constructed object + compute fit window from points
           let xs: number[] = [];
