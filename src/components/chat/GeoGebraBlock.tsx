@@ -88,6 +88,10 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           let xs: number[] = [];
           let ys: number[] = [];
           let hasFunction = false;
+          let hasComplexConic = false;
+          const extend = (x: number, y: number) => {
+            if (Number.isFinite(x) && Number.isFinite(y)) { xs.push(x); ys.push(y); }
+          };
           try {
             const names: string[] = api.getAllObjectNames() || [];
             for (const name of names) {
@@ -101,6 +105,30 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                 } else if (type === "line" || type === "segment" || type === "conic") {
                   api.setColor(name, 26, 60, 110);
                   api.setLineThickness(name, 7);
+                  if (type === "conic") {
+                    // Try to parse circle equation: x² + y² = r²,  (x - a)² + (y - b)² = r²
+                    try {
+                      const eq: string = api.getValueString(name) || "";
+                      const norm = eq.replace(/²/g, "^2").replace(/\s+/g, "");
+                      // (x-a)^2+(y-b)^2=r^2
+                      let m = norm.match(/\(x([+\-][\d.]+)\)\^2\+\(y([+\-][\d.]+)\)\^2=([\d.]+)/);
+                      if (m) {
+                        const a = -parseFloat(m[1]);
+                        const b = -parseFloat(m[2]);
+                        const r = Math.sqrt(parseFloat(m[3]));
+                        extend(a - r, b - r); extend(a + r, b + r);
+                      } else {
+                        // x^2+y^2=r^2
+                        m = norm.match(/x\^2\+y\^2=([\d.]+)/);
+                        if (m) {
+                          const r = Math.sqrt(parseFloat(m[1]));
+                          extend(-r, -r); extend(r, r);
+                        } else {
+                          hasComplexConic = true;
+                        }
+                      }
+                    } catch { hasComplexConic = true; }
+                  }
                 } else if (type === "polygon") {
                   api.setColor(name, 26, 60, 110);
                   api.setLineThickness(name, 6);
@@ -116,23 +144,34 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                   try {
                     const x = api.getXcoord(name);
                     const y = api.getYcoord(name);
-                    if (Number.isFinite(x) && Number.isFinite(y)) {
-                      xs.push(x); ys.push(y);
-                    }
+                    extend(x, y);
                   } catch {}
                 }
               } catch {}
             }
           } catch {}
 
-          // Cadrage 2D : si on a des points, on les englobe avec marge ; sinon fenêtre par défaut
+          // Cadrage 2D : englobe TOUS les objets (points + cercles), avec ratio raisonnable
           if (!is3D) try {
-            if (xs.length > 0) {
+            if (hasComplexConic && xs.length === 0) {
+              api.setCoordSystem(-10, 10, -8, 8);
+            } else if (xs.length > 0) {
               const minX = Math.min(...xs), maxX = Math.max(...xs);
               const minY = Math.min(...ys), maxY = Math.max(...ys);
-              const padX = Math.max(1, (maxX - minX) * 0.3);
-              const padY = Math.max(1, (maxY - minY) * 0.3);
-              api.setCoordSystem(minX - padX, maxX + padX, minY - padY, maxY + padY);
+              let padX = Math.max(1, (maxX - minX) * 0.2);
+              let padY = Math.max(1, (maxY - minY) * 0.2);
+              let x1 = minX - padX, x2 = maxX + padX;
+              let y1 = minY - padY, y2 = maxY + padY;
+              // Ratio garde-fou : éviter une bande trop aplatie
+              const w = x2 - x1, h = y2 - y1;
+              if (h < w * 0.4) {
+                const cy = (y1 + y2) / 2, half = (w * 0.4) / 2;
+                y1 = cy - half; y2 = cy + half;
+              } else if (w < h * 0.4) {
+                const cx = (x1 + x2) / 2, half = (h * 0.4) / 2;
+                x1 = cx - half; x2 = cx + half;
+              }
+              api.setCoordSystem(x1, x2, y1, y2);
             } else if (!hasFunction) {
               api.setCoordSystem(-6, 6, -6, 6);
             }
