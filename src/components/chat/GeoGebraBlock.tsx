@@ -159,6 +159,19 @@ function evalGeoGebraCommand(api: any, cmd: string): boolean {
   return false;
 }
 
+function keepOrthonormalScale(x1: number, x2: number, y1: number, y2: number, width: number, height: number) {
+  const targetRatio = Math.max(1, width) / Math.max(1, height);
+  const currentRatio = (x2 - x1) / Math.max(0.0001, y2 - y1);
+  if (currentRatio < targetRatio) {
+    const cx = (x1 + x2) / 2;
+    const half = ((y2 - y1) * targetRatio) / 2;
+    return { x1: cx - half, x2: cx + half, y1, y2 };
+  }
+  const cy = (y1 + y2) / 2;
+  const half = ((x2 - x1) / targetRatio) / 2;
+  return { x1, x2, y1: cy - half, y2: cy + half };
+}
+
 export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -307,9 +320,13 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                 const cx = (x1 + x2) / 2, half = (h * 0.4) / 2;
                 x1 = cx - half; x2 = cx + half;
               }
+              const size = computeSize();
+              ({ x1, x2, y1, y2 } = keepOrthonormalScale(x1, x2, y1, y2, size.w, size.h));
               api.setCoordSystem(x1, x2, y1, y2);
             } else if (!hasFunction) {
-              api.setCoordSystem(-6, 6, -6, 6);
+              const size = computeSize();
+              const view = keepOrthonormalScale(-6, 6, -6, 6, size.w, size.h);
+              api.setCoordSystem(view.x1, view.x2, view.y1, view.y2);
             }
             // sinon : on garde [-10,10]×[-6,6] pour les fonctions
           } catch {}
