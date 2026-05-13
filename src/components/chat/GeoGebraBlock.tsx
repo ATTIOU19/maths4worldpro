@@ -9,6 +9,7 @@ declare global {
 export type GeoGebraData = {
   title?: string;
   code: string;
+  dim?: "2d" | "3d";
 };
 
 /**
@@ -32,6 +33,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
   useEffect(() => {
     if (!containerRef.current || !window.GGBApplet) return;
     const id = idRef.current;
+    const is3D = data.dim === "3d";
     let appletReady = false;
     let cancelled = false;
     let apiRef: any = null;
@@ -44,7 +46,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
     const initial = computeSize();
 
     const params = {
-      appName: "graphing",
+      appName: is3D ? "3d" : "graphing",
       width: initial.w,
       height: initial.h,
       showToolBar: false,
@@ -58,7 +60,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       showGrid: true,
       showLogo: false,
       borderColor: "transparent",
-      perspective: "G",
+      perspective: is3D ? "T" : "G",
       capturingThreshold: null,
       errorDialogsActive: false,
       useBrowserForJS: false,
@@ -72,8 +74,8 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           try {
             api.setGridVisible(true);
             api.setAxesVisible(true, true);
-            // Set default coord system FIRST so functions render in view
-            api.setCoordSystem(-10, 10, -6, 6);
+            // Set default 2D coord system; 3D laisse GeoGebra gérer la caméra
+            if (!is3D) api.setCoordSystem(-10, 10, -6, 6);
           } catch {}
           for (const cmd of splitCommands(data.code)) {
             try {
@@ -103,6 +105,10 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                   api.setColor(name, 26, 60, 110);
                   api.setLineThickness(name, 6);
                   try { api.setFilling(name, 0.2); } catch {}
+                } else if (type === "polyhedron" || type === "quadric" || type === "surface" || type === "plane") {
+                  api.setColor(name, 26, 60, 110);
+                  try { api.setFilling(name, 0.25); } catch {}
+                  try { api.setLineThickness(name, 5); } catch {}
                 } else if (type === "point") {
                   api.setColor(name, 42, 139, 203);
                   api.setPointSize(name, 7);
@@ -119,8 +125,8 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
             }
           } catch {}
 
-          // Cadrage : si on a des points, on les englobe avec marge ; sinon fenêtre par défaut
-          try {
+          // Cadrage 2D : si on a des points, on les englobe avec marge ; sinon fenêtre par défaut
+          if (!is3D) try {
             if (xs.length > 0) {
               const minX = Math.min(...xs), maxX = Math.max(...xs);
               const minY = Math.min(...ys), maxY = Math.max(...ys);
@@ -155,7 +161,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       ro.disconnect();
       if (containerRef.current) containerRef.current.innerHTML = "";
     };
-  }, [data.code]);
+  }, [data.code, data.dim]);
 
   return (
     <div ref={wrapperRef} className="my-4 p-3 rounded-2xl border border-border bg-card shadow-lg ggb-wrapper">
@@ -164,8 +170,14 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       )}
       <div ref={containerRef} className="w-full overflow-hidden rounded-xl ggb-container" style={{ background: "#FFFFFF" }} />
       <p className="text-[11px] text-muted-foreground text-center mt-2">
-        Figure interactive — déplacez les points pour explorer
+        {is3DLabel(data.dim)}
       </p>
     </div>
   );
+}
+
+function is3DLabel(dim?: "2d" | "3d") {
+  return dim === "3d"
+    ? "Figure 3D interactive — faites glisser pour faire pivoter"
+    : "Figure interactive — déplacez les points pour explorer";
 }
