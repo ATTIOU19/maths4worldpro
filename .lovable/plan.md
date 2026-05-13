@@ -1,34 +1,50 @@
-## Problème observé
-La capture montre un canvas presque entièrement blanc : la courbe n'est pas visible et le quadrillage n'apparaît qu'à l'extrême droite. Causes probables :
-1. `ZoomFit()` ne cadre pas correctement les fonctions (GeoGebra ne connaît pas leurs bornes naturelles) → la courbe est tracée hors champ.
-2. `setColor` / `setLineThickness` peuvent échouer silencieusement selon le type d'objet (fonction vs polygone).
-3. La grille par défaut est trop pâle, sans distinction majeur/mineur.
+## Objectif
+Permettre au modèle de tracer **toute la géométrie** : figures 2D (carré, cercle, losange, parallélogramme, trapèze, hexagone, triangles spéciaux, ellipse, parabole…) **et** figures 3D (cube, sphère, cylindre, cône, pyramide, tétraèdre, prisme, plans, droites de l'espace).
 
-## Plan de corrections (`src/components/chat/GeoGebraBlock.tsx` uniquement)
+## État actuel
+- `supabase/functions/visualize/index.ts` : prompt système limité à quelques exemples 2D (carré, triangle équilatéral, x²).
+- `src/components/chat/GeoGebraBlock.tsx` : applet figé sur `appName: "graphing"` (2D uniquement) avec `perspective: "G"`.
 
-### 1. Cadrage fiable
-- Toujours appeler `api.setCoordSystem(-10, 10, -6, 6)` **par défaut** (au lieu de seulement en fallback).
-- Pour chaque objet de type `point`, élargir la fenêtre pour l'inclure (calcul min/max sur `getXcoord`/`getYcoord` + marge).
-- Pour les fonctions, garder la fenêtre par défaut [-10,10]×[-6,6] (ou symétrique adaptée).
-- Supprimer l'appel `ZoomFit()` qui échoue sur les fonctions.
+## Plan
 
-### 2. Grille élégante (style "cahier de maths")
-- `api.setGridVisible(true)` + `api.setAxesVisible(true, true)`
-- Grille cartésienne avec lignes majeures/mineures :
-  - `api.evalCommand("SetActiveView(1)")`
-  - Forcer `gridType = 1` (cartésien) et `gridDistance = {1,1}` via JS API si dispo.
-- Couleur grille douce (HSL ~ 210 20% 88%), axes sombres (foreground), épaisseur axes 2.
+### 1. Enrichir le prompt système (`supabase/functions/visualize/index.ts`)
+Ajouter une **bibliothèque d'exemples** couvrant :
+- **Quadrilatères** : carré, rectangle, losange (via diagonales perpendiculaires), parallélogramme, trapèze
+- **Triangles** : équilatéral, isocèle, rectangle, quelconque, avec hauteurs/médianes/bissectrices si demandé
+- **Polygones réguliers** : `Polygon(centre, sommet, n)` pour pentagone, hexagone, octogone
+- **Cercles & coniques** : cercle, ellipse, parabole, hyperbole, arcs, secteurs, tangentes
+- **Constructions** : médiatrice, bissectrice, perpendiculaire, parallèle, intersection, milieu
+- **Transformations** : rotation, symétrie, translation, homothétie
+- **3D** (nouveau) : cube, sphère, cylindre, cône, pyramide, tétraèdre, prisme, plan, droite de l'espace
 
-### 3. Courbe & objets bien visibles
-- Pour les fonctions : `api.setColor(name, 26, 60, 110)` (primary) + `api.setLineThickness(name, 8)` + `api.setLineStyle(name, 0)` (plein).
-- Pour les polygones : remplissage primary à 25% via `api.setFilling(name, 0.25)`.
-- Points : couleur secondary (#2A8BCB), taille 7, label visible.
-- Try/catch individuels (déjà en place) — on garde.
+Ajouter un **champ `dim`** dans le JSON renvoyé : `"dim": "2d"` ou `"dim": "3d"`. Le modèle doit choisir selon la demande.
 
-### 4. Fond & rendu
-- `containerRef` fond blanc explicite (#FFFFFF) pour contraste max sur la courbe bleue.
-- Réduire un peu la hauteur sur viewport étroit pour éviter le scroll vertical de la bulle.
+### 2. Étendre le format de sortie
+```json
+{
+  "type": "geogebra",
+  "dim": "3d",
+  "title": "Cube ABCDEFGH",
+  "code": "Cube((0,0,0),(2,0,0),(0,2,0))"
+}
+```
+- Rétrocompat : si `dim` absent → `"2d"`.
+
+### 3. Adapter `GeoGebraBlock.tsx`
+- Le type `GeoGebraData` reçoit un champ optionnel `dim?: "2d" | "3d"`.
+- Si `dim === "3d"` → `appName: "3d"` et `perspective: "T"` (vue 3D), pas de `setCoordSystem` 2D, sauter le calcul de cadrage points (laisser GeoGebra gérer).
+- Sinon comportement 2D actuel inchangé.
+- Le panneau algèbre reste masqué dans les deux cas.
+
+### 4. Propager `dim` côté parsing
+- `src/components/chat/ChartRenderer.tsx` (parser des blocs `geogebra`) : inclure `dim` dans l'objet retourné.
+- `MessageBubble.tsx` : déjà transmet `part.geogebra` → rien à changer si on enrichit juste le type.
 
 ## Hors scope
-- Pas de changement du prompt edge function ni de `MessageBubble`.
-- Pas de changement sur d'autres pages.
+- Pas de changement UI (taille, style — déjà OK).
+- Pas de nouvel endpoint, pas de migration DB.
+- Pas de touche aux pages ChatIA / TuteurIA (le composant partagé bénéficie des améliorations automatiquement).
+
+## Risques & mitigations
+- Certaines commandes 3D échouent silencieusement → on garde le `try/catch` par commande déjà présent.
+- Le modèle peut hésiter entre 2D/3D : le prompt explicitera **"si l'utilisateur mentionne 'espace', 'volume', '3D', cube, sphère, pyramide, plan ⇒ dim=3d ; sinon dim=2d"**.
