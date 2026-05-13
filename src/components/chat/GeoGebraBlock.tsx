@@ -24,6 +24,86 @@ function splitCommands(code: string): string[] {
     .filter(Boolean);
 }
 
+function splitArgs(args: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let depth = 0;
+  for (const char of args) {
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+    if (char === "," && depth === 0) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) result.push(current.trim());
+  return result;
+}
+
+function getPoint2D(api: any, value: string): { x: number; y: number } | null {
+  const direct = value.match(/^\(?\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*\)?$/);
+  if (direct) return { x: parseFloat(direct[1]), y: parseFloat(direct[2]) };
+  try {
+    const x = api.getXcoord(value);
+    const y = api.getYcoord(value);
+    return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+  } catch {
+    return null;
+  }
+}
+
+function getNumericValue(api: any, value: string): number | null {
+  const parsed = Number(value.replace(",", "."));
+  if (Number.isFinite(parsed)) return parsed;
+  try {
+    const n = api.getValue(value);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function circumcircle(points: { x: number; y: number }[]) {
+  const [a, b, c] = points;
+  const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+  if (Math.abs(d) < 1e-9) return null;
+  const ux = ((a.x ** 2 + a.y ** 2) * (b.y - c.y) + (b.x ** 2 + b.y ** 2) * (c.y - a.y) + (c.x ** 2 + c.y ** 2) * (a.y - b.y)) / d;
+  const uy = ((a.x ** 2 + a.y ** 2) * (c.x - b.x) + (b.x ** 2 + b.y ** 2) * (a.x - c.x) + (c.x ** 2 + c.y ** 2) * (b.x - a.x)) / d;
+  const r = Math.hypot(ux - a.x, uy - a.y);
+  return { x: ux, y: uy, r };
+}
+
+function extendCircleFromCommand(api: any, cmd: string, extend: (x: number, y: number) => void): boolean {
+  const match = cmd.match(/(?:\w+\s*=\s*)?Circle\s*\((.*)\)\s*$/i);
+  if (!match) return false;
+  const args = splitArgs(match[1]);
+  const center = getPoint2D(api, args[0] || "");
+  if (args.length === 2 && center) {
+    const radius = getNumericValue(api, args[1]);
+    const boundary = getPoint2D(api, args[1]);
+    const r = radius ?? (boundary ? Math.hypot(boundary.x - center.x, boundary.y - center.y) : null);
+    if (r && Number.isFinite(r)) {
+      extend(center.x - Math.abs(r), center.y - Math.abs(r));
+      extend(center.x + Math.abs(r), center.y + Math.abs(r));
+      return true;
+    }
+  }
+  if (args.length === 3) {
+    const pts = args.map((arg) => getPoint2D(api, arg));
+    if (pts.every(Boolean)) {
+      const circle = circumcircle(pts as { x: number; y: number }[]);
+      if (circle) {
+        extend(circle.x - circle.r, circle.y - circle.r);
+        extend(circle.x + circle.r, circle.y + circle.r);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -77,7 +157,8 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
             // Set default 2D coord system; 3D laisse GeoGebra gérer la caméra
             if (!is3D) api.setCoordSystem(-10, 10, -6, 6);
           } catch {}
-          for (const cmd of splitCommands(data.code)) {
+          const commands = splitCommands(data.code);
+          for (const cmd of commands) {
             try {
               api.evalCommand(cmd);
             } catch (err) {
@@ -92,6 +173,10 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           const extend = (x: number, y: number) => {
             if (Number.isFinite(x) && Number.isFinite(y)) { xs.push(x); ys.push(y); }
           };
+          let framedCircleFromCommand = false;
+          if (!is3D) {
+            for (const cmd of commands) framedCircleFromCommand = extendCircleFromCommand(api, cmd, extend) || framedCircleFromCommand;
+          }
           try {
             const names: string[] = api.getAllObjectNames() || [];
             for (const name of names) {
@@ -109,7 +194,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                     // Try to parse circle equation: x² + y² = r²,  (x - a)² + (y - b)² = r²
                     try {
                       const eq: string = api.getValueString(name) || "";
-                      const norm = eq.replace(/²/g, "^2").replace(/\s+/g, "");
+                      const norm = eq.replace(/^[^:]+:/, "").replace(/²/g, "^2").replace(/\s+/g, "");
                       // (x-a)^2+(y-b)^2=r^2
                       let m = norm.match(/\(x([+\-][\d.]+)\)\^2\+\(y([+\-][\d.]+)\)\^2=([\d.]+)/);
                       if (m) {
@@ -119,7 +204,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                         extend(a - r, b - r); extend(a + r, b + r);
                       } else {
                         // x^2+y^2=r^2
-                        m = norm.match(/x\^2\+y\^2=([\d.]+)/);
+                        m = norm.match(/x\^2\+y\^2=([\d.]+)/) || norm.match(/x\^2\+y\^2-([\d.]+)=0/);
                         if (m) {
                           const r = Math.sqrt(parseFloat(m[1]));
                           extend(-r, -r); extend(r, r);
