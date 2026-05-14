@@ -122,7 +122,7 @@ Structure ta réponse ainsi :
 
 Termine en m'invitant à poser des questions pour approfondir.`,
     };
-    setMessages([synth]);
+    // On envoie le prompt à l'IA mais on ne l'affiche pas dans le chat
     runStream([synth]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notion, domaine]);
@@ -164,7 +164,7 @@ Termine en m'invitant à poser des questions pour approfondir.`,
           </div>
         )}
         {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
-        {loading && messages[messages.length - 1]?.role === "user" && (
+        {loading && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
           <div className="flex justify-start">
             <div className="chat-bubble-ai px-4 py-3">
               <div className="flex gap-1.5">
