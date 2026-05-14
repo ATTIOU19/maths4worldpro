@@ -122,7 +122,7 @@ Structure ta réponse ainsi :
 
 Termine en m'invitant à poser des questions pour approfondir.`,
     };
-    setMessages([synth]);
+    // On envoie le prompt à l'IA mais on ne l'affiche pas dans le chat
     runStream([synth]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notion, domaine]);
