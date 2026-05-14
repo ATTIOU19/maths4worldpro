@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen } from "lucide-react";
+import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen, TrendingUp, Landmark, Banknote, Zap, Truck, Shield, Cpu, GraduationCap } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
@@ -93,6 +93,113 @@ const domains = [
     ],
   },
 ];
+
+domains.push(
+  {
+    icon: TrendingUp, title: "Finance & Marchés",
+    sub: "Intérêts composés · Options · Risque · Portefeuille",
+    badge: "Nouveau", badgeColor: "bg-accent",
+    notions: [
+      { nom: "Intérêts composés", description: "Capitalisation, actualisation et valeur temps de l'argent.", niveau: "Débutant" as const },
+      { nom: "Évaluation d'actifs", description: "Modèles DCF, VAN et TRI pour valoriser projets et entreprises.", niveau: "Intermédiaire" as const },
+      { nom: "Théorie du portefeuille", description: "Diversification, frontière efficiente de Markowitz et CAPM.", niveau: "Avancé" as const },
+      { nom: "Options et dérivés", description: "Modèle de Black-Scholes et couverture des risques de marché.", niveau: "Avancé" as const },
+      { nom: "Mesures de risque", description: "Volatilité, VaR et Expected Shortfall pour gérer l'exposition.", niveau: "Intermédiaire" as const },
+      { nom: "Mathématiques actuarielles", description: "Tables de mortalité et calculs de primes d'assurance.", niveau: "Avancé" as const },
+    ],
+  },
+  {
+    icon: Landmark, title: "Économie",
+    sub: "Élasticité · Macro · Optimisation · Théorie des jeux",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Élasticités", description: "Sensibilité de la demande au prix et au revenu.", niveau: "Débutant" as const },
+      { nom: "Optimisation sous contrainte", description: "Lagrangiens pour le choix du consommateur et du producteur.", niveau: "Avancé" as const },
+      { nom: "Modèles macroéconomiques", description: "IS-LM, croissance de Solow et inflation.", niveau: "Intermédiaire" as const },
+      { nom: "Théorie des jeux", description: "Équilibre de Nash et stratégies pour la concurrence et la négociation.", niveau: "Avancé" as const },
+      { nom: "Indices économiques", description: "Calcul de l'IPC, du PIB réel et des taux de croissance.", niveau: "Débutant" as const },
+      { nom: "Économétrie", description: "Régressions et tests statistiques sur données économiques.", niveau: "Avancé" as const },
+    ],
+  },
+  {
+    icon: Banknote, title: "Comptabilité & Gestion",
+    sub: "Amortissements · Coûts · Budget · Trésorerie",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Amortissements", description: "Méthodes linéaire et dégressive pour la dépréciation des actifs.", niveau: "Débutant" as const },
+      { nom: "Seuil de rentabilité", description: "Coûts fixes, variables et point mort pour piloter une activité.", niveau: "Débutant" as const },
+      { nom: "Analyse de marges", description: "Marge brute, nette et contribution par produit ou service.", niveau: "Intermédiaire" as const },
+      { nom: "Budget et prévisions", description: "Construction budgétaire et écarts entre prévu et réalisé.", niveau: "Intermédiaire" as const },
+      { nom: "Gestion de trésorerie", description: "Plans de trésorerie, BFR et besoins de financement.", niveau: "Intermédiaire" as const },
+      { nom: "Ratios financiers", description: "Liquidité, solvabilité et rentabilité pour analyser une entreprise.", niveau: "Intermédiaire" as const },
+    ],
+  },
+  {
+    icon: Zap, title: "Énergie & Environnement",
+    sub: "Bilans énergétiques · Solaire · Empreinte carbone",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Bilans énergétiques", description: "Conversion et rendement entre formes d'énergie.", niveau: "Intermédiaire" as const },
+      { nom: "Dimensionnement solaire", description: "Calcul de panneaux et batteries pour sites isolés en Afrique.", niveau: "Intermédiaire" as const },
+      { nom: "Empreinte carbone", description: "Comptabilité CO₂ des activités et produits.", niveau: "Débutant" as const },
+      { nom: "Modèles climatiques", description: "Équations différentielles pour la dynamique du climat.", niveau: "Avancé" as const },
+      { nom: "Optimisation énergétique", description: "Minimisation de la consommation sous contraintes opérationnelles.", niveau: "Avancé" as const },
+      { nom: "Statistiques environnementales", description: "Analyse de séries de mesures de pollution et de qualité de l'air.", niveau: "Intermédiaire" as const },
+    ],
+  },
+  {
+    icon: Truck, title: "Logistique & Supply Chain",
+    sub: "Tournées · Stocks · Files d'attente · Prévision",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Optimisation de tournées", description: "Problème du voyageur de commerce et algorithmes de routage.", niveau: "Avancé" as const },
+      { nom: "Gestion des stocks", description: "Modèles EOQ, point de commande et stock de sécurité.", niveau: "Intermédiaire" as const },
+      { nom: "Théorie des files d'attente", description: "Modèles M/M/1 pour entrepôts, ports et centres d'appels.", niveau: "Avancé" as const },
+      { nom: "Prévision de la demande", description: "Moyennes mobiles, lissage exponentiel et saisonnalité.", niveau: "Intermédiaire" as const },
+      { nom: "Programmation linéaire", description: "Allocation optimale de ressources et planification.", niveau: "Avancé" as const },
+      { nom: "KPI logistiques", description: "Taux de service, rotation et délais pour piloter la performance.", niveau: "Débutant" as const },
+    ],
+  },
+  {
+    icon: Shield, title: "Cybersécurité & Cryptographie",
+    sub: "Modulo · RSA · Probabilités · Codes correcteurs",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Arithmétique modulaire", description: "Congruences et théorème d'Euler, base de la cryptographie.", niveau: "Intermédiaire" as const },
+      { nom: "Cryptographie RSA", description: "Génération de clés, chiffrement et signature numérique.", niveau: "Avancé" as const },
+      { nom: "Courbes elliptiques", description: "ECC pour des clés courtes et sécurisées (mobile, IoT).", niveau: "Avancé" as const },
+      { nom: "Fonctions de hachage", description: "Propriétés de SHA et résistance aux collisions.", niveau: "Intermédiaire" as const },
+      { nom: "Probabilités d'attaque", description: "Estimation des risques de collision et brute force.", niveau: "Intermédiaire" as const },
+      { nom: "Codes correcteurs", description: "Codes de Hamming et Reed-Solomon pour la transmission fiable.", niveau: "Avancé" as const },
+    ],
+  },
+  {
+    icon: Cpu, title: "Ingénierie & Électronique",
+    sub: "Signaux · Fourier · Circuits · Automatique",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Nombres complexes", description: "Représentation des signaux et impédances en électronique.", niveau: "Intermédiaire" as const },
+      { nom: "Transformée de Fourier", description: "Analyse fréquentielle des signaux audio, image et radio.", niveau: "Avancé" as const },
+      { nom: "Équations différentielles", description: "Modélisation des circuits RLC et systèmes dynamiques.", niveau: "Avancé" as const },
+      { nom: "Asservissement", description: "Boucles de rétroaction et stabilité en automatique.", niveau: "Avancé" as const },
+      { nom: "Algèbre de Boole", description: "Logique combinatoire pour la conception de circuits numériques.", niveau: "Débutant" as const },
+      { nom: "Traitement du signal", description: "Filtres numériques et échantillonnage de Shannon.", niveau: "Avancé" as const },
+    ],
+  },
+  {
+    icon: GraduationCap, title: "Éducation & Recherche",
+    sub: "Pédagogie · Statistiques · Expérimentation",
+    badge: null, badgeColor: "",
+    notions: [
+      { nom: "Statistiques pour l'enseignement", description: "Évaluation des résultats et analyse des progrès des élèves.", niveau: "Débutant" as const },
+      { nom: "Plans d'expérience", description: "Conception d'études comparatives en sciences de l'éducation.", niveau: "Intermédiaire" as const },
+      { nom: "Tests psychométriques", description: "Fiabilité, validité et théorie des réponses aux items.", niveau: "Avancé" as const },
+      { nom: "Analyse de données qualitatives", description: "Codage et statistiques sur enquêtes et entretiens.", niveau: "Intermédiaire" as const },
+      { nom: "Modélisation de l'apprentissage", description: "Courbes d'apprentissage et modèles cognitifs.", niveau: "Avancé" as const },
+      { nom: "Échantillonnage", description: "Méthodes pour des enquêtes représentatives en milieu scolaire.", niveau: "Intermédiaire" as const },
+    ],
+  },
+);
 
 const niveauColor = {
   "Débutant": "bg-green-500/10 text-green-700 border-green-500/20",
