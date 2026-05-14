@@ -235,6 +235,21 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           let ys: number[] = [];
           let hasFunction = false;
           let hasComplexConic = false;
+          // Palette inspirée de la capture (planes terracotta/salmon, ligne verte, points bleus)
+          const palette: [number, number, number][] = [
+            [201, 110, 84],   // terracotta
+            [232, 168, 124],  // salmon clair
+            [139, 168, 120],  // sauge / vert plan
+            [107, 140, 168],  // bleu acier
+            [196, 149, 107],  // sable chaud
+            [168, 96, 76],    // brique
+            [120, 158, 138],  // vert d'eau
+          ];
+          let solidIdx = 0;
+          let planarIdx = 0;
+          const PLANE_FILL = 0.45;
+          const SOLID_FILL = 0.35;
+          const POLY_FILL = 0.35;
           const extend = (x: number, y: number) => {
             if (Number.isFinite(x) && Number.isFinite(y)) { xs.push(x); ys.push(y); }
           };
@@ -248,12 +263,14 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
               try {
                 if (type === "function" || type === "curve") {
                   hasFunction = true;
-                  api.setColor(name, 26, 60, 110);
-                  api.setLineThickness(name, 8);
+                  const [r, g, b] = palette[planarIdx++ % palette.length];
+                  api.setColor(name, r, g, b);
+                  api.setLineThickness(name, 7);
                   api.setLineStyle(name, 0);
                 } else if (type === "line" || type === "segment" || type === "conic") {
-                  api.setColor(name, 26, 60, 110);
-                  api.setLineThickness(name, 7);
+                  const [r, g, b] = palette[planarIdx++ % palette.length];
+                  api.setColor(name, r, g, b);
+                  api.setLineThickness(name, 6);
                   if (type === "conic") {
                     // Try to parse circle equation: x² + y² = r²,  (x - a)² + (y - b)² = r²
                     try {
@@ -279,17 +296,21 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                     } catch { hasComplexConic = true; }
                   }
                 } else if (type === "polygon") {
-                  api.setColor(name, 26, 60, 110);
-                  api.setLineThickness(name, 6);
-                  try { api.setFilling(name, 0.2); } catch {}
+                  const [r, g, b] = palette[solidIdx++ % palette.length];
+                  api.setColor(name, r, g, b);
+                  api.setLineThickness(name, 5);
+                  try { api.setFilling(name, POLY_FILL); } catch {}
                 } else if (type === "polyhedron" || type === "quadric" || type === "surface" || type === "plane") {
-                  api.setColor(name, 26, 60, 110);
-                  try { api.setFilling(name, 0.25); } catch {}
-                  try { api.setLineThickness(name, 5); } catch {}
+                  const [r, g, b] = palette[solidIdx++ % palette.length];
+                  api.setColor(name, r, g, b);
+                  const fill = type === "plane" ? PLANE_FILL : SOLID_FILL;
+                  try { api.setFilling(name, fill); } catch {}
+                  try { api.setLineThickness(name, 4); } catch {}
                 } else if (type === "point") {
-                  api.setColor(name, 42, 139, 203);
-                  api.setPointSize(name, 7);
+                  api.setColor(name, 42, 110, 187);
+                  api.setPointSize(name, 6);
                   api.setLabelVisible(name, true);
+                  try { api.setLabelStyle(name, 1); } catch {}
                   try {
                     const x = api.getXcoord(name);
                     const y = api.getYcoord(name);
