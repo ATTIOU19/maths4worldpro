@@ -164,7 +164,7 @@ Termine en m'invitant à poser des questions pour approfondir.`,
           </div>
         )}
         {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
-        {loading && messages[messages.length - 1]?.role === "user" && (
+        {loading && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
           <div className="flex justify-start">
             <div className="chat-bubble-ai px-4 py-3">
               <div className="flex gap-1.5">
