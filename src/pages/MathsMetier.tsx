@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen, TrendingUp, Landmark, Banknote, Zap, Truck, Shield, Cpu, GraduationCap } from "lucide-react";
+import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen, TrendingUp, Landmark, Banknote, Zap, Truck, Shield, Cpu, GraduationCap, Sparkles, MessageSquare } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
@@ -15,7 +15,7 @@ type Notion = {
 
 const domains = [
   {
-    icon: Bot, title: "Intelligence Artificielle",
+    icon: Bot, title: "Intelligence Artificielle", accent: "#6366f1",
     sub: "Algèbre linéaire · Optimisation · Probabilités bayésiennes",
     badge: "Populaire", badgeColor: "bg-secondary",
     notions: [
@@ -28,7 +28,7 @@ const domains = [
     ],
   },
   {
-    icon: BarChart3, title: "Data Science",
+    icon: BarChart3, title: "Data Science", accent: "#06b6d4",
     sub: "Statistiques · Distributions · Régression · Matrices",
     badge: null, badgeColor: "",
     notions: [
@@ -41,7 +41,7 @@ const domains = [
     ],
   },
   {
-    icon: Brain, title: "Machine Learning",
+    icon: Brain, title: "Machine Learning", accent: "#8b5cf6",
     sub: "Descente de gradient · Fonctions de coût · Valeurs propres",
     badge: "Nouveau", badgeColor: "bg-accent",
     notions: [
@@ -54,7 +54,7 @@ const domains = [
     ],
   },
   {
-    icon: Building2, title: "BTP & Architecture",
+    icon: Building2, title: "BTP & Architecture", accent: "#f59e0b",
     sub: "Calculs de structure · Volumes · Métrés · Résistance",
     badge: null, badgeColor: "",
     notions: [
@@ -67,7 +67,7 @@ const domains = [
     ],
   },
   {
-    icon: Sprout, title: "Agriculture & Agronomie",
+    icon: Sprout, title: "Agriculture & Agronomie", accent: "#22c55e",
     sub: "Surfaces · Rendements · Modèles de croissance",
     badge: null, badgeColor: "",
     notions: [
@@ -80,7 +80,7 @@ const domains = [
     ],
   },
   {
-    icon: Pill, title: "Médecine & Santé",
+    icon: Pill, title: "Médecine & Santé", accent: "#ec4899",
     sub: "Dosages · Statistiques médicales · Épidémiologie",
     badge: null, badgeColor: "",
     notions: [
@@ -96,7 +96,7 @@ const domains = [
 
 domains.push(
   {
-    icon: TrendingUp, title: "Finance & Marchés",
+    icon: TrendingUp, title: "Finance & Marchés", accent: "#10b981",
     sub: "Intérêts composés · Options · Risque · Portefeuille",
     badge: "Nouveau", badgeColor: "bg-accent",
     notions: [
@@ -109,7 +109,7 @@ domains.push(
     ],
   },
   {
-    icon: Landmark, title: "Économie",
+    icon: Landmark, title: "Économie", accent: "#3b82f6",
     sub: "Élasticité · Macro · Optimisation · Théorie des jeux",
     badge: null, badgeColor: "",
     notions: [
@@ -122,7 +122,7 @@ domains.push(
     ],
   },
   {
-    icon: Banknote, title: "Comptabilité & Gestion",
+    icon: Banknote, title: "Comptabilité & Gestion", accent: "#64748b",
     sub: "Amortissements · Coûts · Budget · Trésorerie",
     badge: null, badgeColor: "",
     notions: [
@@ -135,7 +135,7 @@ domains.push(
     ],
   },
   {
-    icon: Zap, title: "Énergie & Environnement",
+    icon: Zap, title: "Énergie & Environnement", accent: "#eab308",
     sub: "Bilans énergétiques · Solaire · Empreinte carbone",
     badge: null, badgeColor: "",
     notions: [
@@ -148,7 +148,7 @@ domains.push(
     ],
   },
   {
-    icon: Truck, title: "Logistique & Supply Chain",
+    icon: Truck, title: "Logistique & Supply Chain", accent: "#f97316",
     sub: "Tournées · Stocks · Files d'attente · Prévision",
     badge: null, badgeColor: "",
     notions: [
@@ -161,7 +161,7 @@ domains.push(
     ],
   },
   {
-    icon: Shield, title: "Cybersécurité & Cryptographie",
+    icon: Shield, title: "Cybersécurité & Cryptographie", accent: "#ef4444",
     sub: "Modulo · RSA · Probabilités · Codes correcteurs",
     badge: null, badgeColor: "",
     notions: [
@@ -174,7 +174,7 @@ domains.push(
     ],
   },
   {
-    icon: Cpu, title: "Ingénierie & Électronique",
+    icon: Cpu, title: "Ingénierie & Électronique", accent: "#14b8a6",
     sub: "Signaux · Fourier · Circuits · Automatique",
     badge: null, badgeColor: "",
     notions: [
@@ -187,7 +187,7 @@ domains.push(
     ],
   },
   {
-    icon: GraduationCap, title: "Éducation & Recherche",
+    icon: GraduationCap, title: "Éducation & Recherche", accent: "#d946ef",
     sub: "Pédagogie · Statistiques · Expérimentation",
     badge: null, badgeColor: "",
     notions: [
@@ -207,8 +207,19 @@ const niveauColor = {
   "Avancé": "bg-red-500/10 text-red-700 border-red-500/20",
 };
 
+const niveauBar = {
+  "Débutant": "#22c55e",
+  "Intermédiaire": "#eab308",
+  "Avancé": "#ef4444",
+};
+
+type NiveauFilter = "all" | "Débutant" | "Intermédiaire" | "Avancé";
+
+const totalNotions = domains.reduce((acc, d) => acc + d.notions.length, 0);
+
 const MathsMetier = () => {
   const [expanded, setExpanded] = useState<number>(-1);
+  const [niveauFilter, setNiveauFilter] = useState<NiveauFilter>("all");
   const navigate = useNavigate();
 
   const handleLearn = (domaine: string, notion: string) => {
@@ -219,47 +230,111 @@ const MathsMetier = () => {
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
       <MathSymbolsBackground variant="light" count={16} opacity={0.05} />
       <Navbar />
-      <div className="pt-24 pb-16 relative z-10">
+      <div className="pt-24 pb-16 relative z-10 flex-1">
         <div className="container mx-auto px-4">
+          {/* HERO */}
           <motion.div
-            className="text-center mb-12"
+            className="relative text-center mb-14 max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-3">
-              Maths Métier
+            <div
+              aria-hidden
+              className="absolute inset-x-0 -top-16 h-64 -z-10 blur-3xl opacity-60 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, rgba(26,60,110,0.18), transparent 60%)",
+              }}
+            />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5 border border-primary/15">
+              <Sparkles size={12} />
+              {domains.length} domaines · {totalNotions}+ notions
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
+              Maths{" "}
+              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                Métier
+              </span>
             </h1>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Les mathématiques de votre domaine professionnel. Choisissez votre domaine et maîtrisez les maths qui font votre expertise.
+            <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+              Les mathématiques de votre domaine professionnel. Choisissez votre métier et maîtrisez les notions qui font votre expertise.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto mb-8">
+          {/* DOMAINS GRID */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto mb-10">
             {domains.map((d, i) => (
               <motion.button
                 key={i}
                 onClick={() => setExpanded(expanded === i ? -1 : i)}
-                className={`text-left bg-card rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all duration-300 border-2 ${
-                  expanded === i ? "border-secondary" : "border-transparent"
-                }`}
+                className="group text-left bg-card rounded-2xl p-6 border border-border/60 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
+                style={{
+                  boxShadow:
+                    expanded === i
+                      ? `0 12px 32px -12px ${d.accent}66, 0 0 0 2px ${d.accent}`
+                      : "0 4px 16px -8px rgba(15,23,42,0.10)",
+                }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
+                transition={{ delay: i * 0.04 }}
+                whileHover={{ scale: 1.01 }}
               >
+                {/* glow */}
+                <div
+                  aria-hidden
+                  className="absolute -top-12 -right-12 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500"
+                  style={{ backgroundColor: `${d.accent}33` }}
+                />
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <d.icon size={24} className="text-primary" />
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center ring-1"
+                    style={{
+                      backgroundColor: `${d.accent}18`,
+                      boxShadow: `inset 0 0 0 1px ${d.accent}33`,
+                      color: d.accent,
+                    }}
+                  >
+                    <d.icon size={24} />
                   </div>
                   {d.badge && (
-                    <span className={`${d.badgeColor} text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full`}>
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full border"
+                      style={{
+                        color: d.accent,
+                        borderColor: `${d.accent}40`,
+                        backgroundColor: `${d.accent}10`,
+                      }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: d.accent }}
+                      />
                       {d.badge}
                     </span>
                   )}
                 </div>
-                <h3 className="font-bold text-card-foreground mb-1">{d.title}</h3>
-                <p className="text-xs text-muted-foreground mb-4">{d.sub}</p>
-                <span className="text-secondary text-sm font-semibold inline-flex items-center gap-1">
-                  Explorer <ArrowRight size={14} />
+                <h3 className="font-bold text-card-foreground mb-1.5 text-base">
+                  {d.title}
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4 leading-relaxed line-clamp-2">
+                  {d.sub}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {d.notions.slice(0, 3).map((n) => (
+                    <span
+                      key={n.nom}
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60"
+                    >
+                      {n.nom}
+                    </span>
+                  ))}
+                </div>
+                <span
+                  className="text-sm font-semibold inline-flex items-center gap-1 transition-transform group-hover:gap-2"
+                  style={{ color: d.accent }}
+                >
+                  {expanded === i ? "Masquer" : "Explorer"}{" "}
+                  <ArrowRight size={14} />
                 </span>
               </motion.button>
             ))}
@@ -272,24 +347,75 @@ const MathsMetier = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.4 }}
-                className="max-w-5xl mx-auto"
+                transition={{ duration: 0.35 }}
+                className="max-w-6xl mx-auto"
               >
-                <div className="bg-card rounded-2xl shadow-card p-8">
-                  <h2 className="text-xl font-bold text-card-foreground mb-6">
-                    Notions mathématiques pour {domains[expanded].title}
-                  </h2>
+                <div
+                  className="bg-card rounded-2xl shadow-card p-6 md:p-8 border"
+                  style={{ borderColor: `${domains[expanded].accent}30` }}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center"
+                        style={{
+                          backgroundColor: `${domains[expanded].accent}18`,
+                          color: domains[expanded].accent,
+                        }}
+                      >
+                        {(() => {
+                          const Icon = domains[expanded].icon;
+                          return <Icon size={22} />;
+                        })()}
+                      </div>
+                      <div>
+                        <h2 className="text-lg md:text-xl font-bold text-card-foreground leading-tight">
+                          {domains[expanded].title}
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          {domains[expanded].notions.length} notions à explorer
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["all", "Débutant", "Intermédiaire", "Avancé"] as NiveauFilter[]).map(
+                        (lvl) => {
+                          const active = niveauFilter === lvl;
+                          return (
+                            <button
+                              key={lvl}
+                              onClick={() => setNiveauFilter(lvl)}
+                              className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                                active
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                              }`}
+                            >
+                              {lvl === "all" ? "Tous niveaux" : lvl}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                  </div>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {domains[expanded].notions.map((notion, j) => (
+                    {domains[expanded].notions
+                      .filter((n) => niveauFilter === "all" || n.niveau === niveauFilter)
+                      .map((notion, j) => (
                       <motion.div
                         key={j}
-                        className="bg-muted/50 rounded-xl p-5 flex flex-col gap-3 border border-border"
+                        className="group bg-background rounded-xl p-5 flex flex-col gap-3 border border-border hover:shadow-md hover:-translate-y-0.5 transition-all relative overflow-hidden"
+                        style={{
+                          borderLeft: `3px solid ${niveauBar[notion.niveau]}`,
+                        }}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: j * 0.05 }}
+                        transition={{ delay: j * 0.04 }}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-card-foreground text-sm">{notion.nom}</h3>
+                          <h3 className="font-semibold text-card-foreground text-sm leading-snug">
+                            {notion.nom}
+                          </h3>
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border whitespace-nowrap ${niveauColor[notion.niveau]}`}>
                             {notion.niveau}
                           </span>
@@ -299,9 +425,11 @@ const MathsMetier = () => {
                         </p>
                         <button
                           onClick={() => handleLearn(domains[expanded].title, notion.nom)}
-                          className="mt-auto text-xs font-semibold text-secondary inline-flex items-center gap-1 hover:underline self-start"
+                          className="mt-auto text-xs font-semibold inline-flex items-center gap-1 self-start transition-all group-hover:gap-2"
+                          style={{ color: domains[expanded].accent }}
                         >
-                          <BookOpen size={14} /> Apprendre cette notion
+                          <BookOpen size={14} className="transition-transform group-hover:rotate-6" />
+                          Apprendre cette notion
                         </button>
                       </motion.div>
                     ))}
@@ -310,6 +438,44 @@ const MathsMetier = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* CTA banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-6xl mx-auto mt-14"
+          >
+            <div
+              className="relative overflow-hidden rounded-2xl p-8 md:p-10 text-primary-foreground"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)",
+              }}
+            >
+              <div
+                aria-hidden
+                className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-white/10 blur-3xl"
+              />
+              <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <h3 className="text-xl md:text-2xl font-bold mb-2">
+                    Votre métier n'est pas listé ?
+                  </h3>
+                  <p className="text-sm md:text-base opacity-90 max-w-xl">
+                    Demandez à Amara, votre tutrice IA, de vous expliquer n'importe quelle notion mathématique liée à votre activité.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate("/chat")}
+                  className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-5 py-3 rounded-xl hover:bg-white/90 transition shadow-lg whitespace-nowrap"
+                >
+                  <MessageSquare size={18} />
+                  Demander à Amara
+                </button>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
       <Footer />
