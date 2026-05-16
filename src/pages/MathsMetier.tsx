@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen, TrendingUp, Landmark, Banknote, Zap, Truck, Shield, Cpu, GraduationCap } from "lucide-react";
+import { Bot, BarChart3, Brain, Building2, Sprout, Pill, ArrowRight, BookOpen, TrendingUp, Landmark, Banknote, Zap, Truck, Shield, Cpu, GraduationCap, Sparkles, MessageSquare } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
@@ -15,7 +15,7 @@ type Notion = {
 
 const domains = [
   {
-    icon: Bot, title: "Intelligence Artificielle",
+    icon: Bot, title: "Intelligence Artificielle", accent: "#6366f1",
     sub: "Algèbre linéaire · Optimisation · Probabilités bayésiennes",
     badge: "Populaire", badgeColor: "bg-secondary",
     notions: [
