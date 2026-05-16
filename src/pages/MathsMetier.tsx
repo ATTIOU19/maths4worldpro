@@ -28,7 +28,7 @@ const domains = [
     ],
   },
   {
-    icon: BarChart3, title: "Data Science",
+    icon: BarChart3, title: "Data Science", accent: "#06b6d4",
     sub: "Statistiques · Distributions · Régression · Matrices",
     badge: null, badgeColor: "",
     notions: [
@@ -41,7 +41,7 @@ const domains = [
     ],
   },
   {
-    icon: Brain, title: "Machine Learning",
+    icon: Brain, title: "Machine Learning", accent: "#8b5cf6",
     sub: "Descente de gradient · Fonctions de coût · Valeurs propres",
     badge: "Nouveau", badgeColor: "bg-accent",
     notions: [
@@ -54,7 +54,7 @@ const domains = [
     ],
   },
   {
-    icon: Building2, title: "BTP & Architecture",
+    icon: Building2, title: "BTP & Architecture", accent: "#f59e0b",
     sub: "Calculs de structure · Volumes · Métrés · Résistance",
     badge: null, badgeColor: "",
     notions: [
@@ -67,7 +67,7 @@ const domains = [
     ],
   },
   {
-    icon: Sprout, title: "Agriculture & Agronomie",
+    icon: Sprout, title: "Agriculture & Agronomie", accent: "#22c55e",
     sub: "Surfaces · Rendements · Modèles de croissance",
     badge: null, badgeColor: "",
     notions: [
@@ -80,7 +80,7 @@ const domains = [
     ],
   },
   {
-    icon: Pill, title: "Médecine & Santé",
+    icon: Pill, title: "Médecine & Santé", accent: "#ec4899",
     sub: "Dosages · Statistiques médicales · Épidémiologie",
     badge: null, badgeColor: "",
     notions: [
@@ -96,7 +96,7 @@ const domains = [
 
 domains.push(
   {
-    icon: TrendingUp, title: "Finance & Marchés",
+    icon: TrendingUp, title: "Finance & Marchés", accent: "#10b981",
     sub: "Intérêts composés · Options · Risque · Portefeuille",
     badge: "Nouveau", badgeColor: "bg-accent",
     notions: [
@@ -109,7 +109,7 @@ domains.push(
     ],
   },
   {
-    icon: Landmark, title: "Économie",
+    icon: Landmark, title: "Économie", accent: "#3b82f6",
     sub: "Élasticité · Macro · Optimisation · Théorie des jeux",
     badge: null, badgeColor: "",
     notions: [
@@ -122,7 +122,7 @@ domains.push(
     ],
   },
   {
-    icon: Banknote, title: "Comptabilité & Gestion",
+    icon: Banknote, title: "Comptabilité & Gestion", accent: "#64748b",
     sub: "Amortissements · Coûts · Budget · Trésorerie",
     badge: null, badgeColor: "",
     notions: [
@@ -135,7 +135,7 @@ domains.push(
     ],
   },
   {
-    icon: Zap, title: "Énergie & Environnement",
+    icon: Zap, title: "Énergie & Environnement", accent: "#eab308",
     sub: "Bilans énergétiques · Solaire · Empreinte carbone",
     badge: null, badgeColor: "",
     notions: [
@@ -148,7 +148,7 @@ domains.push(
     ],
   },
   {
-    icon: Truck, title: "Logistique & Supply Chain",
+    icon: Truck, title: "Logistique & Supply Chain", accent: "#f97316",
     sub: "Tournées · Stocks · Files d'attente · Prévision",
     badge: null, badgeColor: "",
     notions: [
@@ -161,7 +161,7 @@ domains.push(
     ],
   },
   {
-    icon: Shield, title: "Cybersécurité & Cryptographie",
+    icon: Shield, title: "Cybersécurité & Cryptographie", accent: "#ef4444",
     sub: "Modulo · RSA · Probabilités · Codes correcteurs",
     badge: null, badgeColor: "",
     notions: [
@@ -174,7 +174,7 @@ domains.push(
     ],
   },
   {
-    icon: Cpu, title: "Ingénierie & Électronique",
+    icon: Cpu, title: "Ingénierie & Électronique", accent: "#14b8a6",
     sub: "Signaux · Fourier · Circuits · Automatique",
     badge: null, badgeColor: "",
     notions: [
@@ -187,7 +187,7 @@ domains.push(
     ],
   },
   {
-    icon: GraduationCap, title: "Éducation & Recherche",
+    icon: GraduationCap, title: "Éducation & Recherche", accent: "#d946ef",
     sub: "Pédagogie · Statistiques · Expérimentation",
     badge: null, badgeColor: "",
     notions: [
