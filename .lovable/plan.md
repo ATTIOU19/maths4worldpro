@@ -1,47 +1,47 @@
-## Objectif
+# Plan — GeoGebra 2D/3D dans tous les chats
 
-Transformer la page **Maths Métier** en une expérience visuelle premium, plus engageante, en restant fidèle à l'identité MATHS4WORLD (bleu profond #1A3C6E, Inter, ton sérieux/africain). Aucune modification fonctionnelle : routes, navigation et logique de dépliement restent identiques.
+## Constat
 
-## Ce qui change visuellement
+- `GeoGebraBlock` (utilisé dans Visualisation) gère déjà 2D et 3D avec le même rendu soigné (cadre blanc, palette terracotta/sauge, points bleus, légende).
+- `MessageBubble` (Chat IA + Notion d'apprentissage) **affiche déjà** les blocs ` ```geogebra ` via `parseChartBlocks` + `<GeoGebraBlock />`. Le rendu visuel est donc déjà identique à la page Visualisation.
+- Ce qui manque côté **Chat IA** et **Notion** : le prompt système ne décrit que des primitives 2D. Le modèle n'a aucune raison d'émettre un bloc avec `"dim":"3d"` ni d'utiliser `Cube`, `Sphere`, `Cylinder`, `Cone`, `Pyramid`, `Plane`, `Surface`, etc. Résultat : pour une question 3D, soit pas de figure, soit une figure 2D approximative.
+- **Visualisation** : déjà parfait, rien à changer.
+- **Tuteur IA** (`src/pages/TuteurIA.tsx`) : c'est une **démo scriptée** (messages codés en dur, pas d'appel IA). Ajouter un bloc GeoGebra revient simplement à inclure un bloc ` ```geogebra ` dans un message scénarisé et basculer son rendu sur `MessageBubble`.
+- **Entretien vocal** (`src/pages/EntretienSession.tsx`) : c'est une session **100% audio (TTS)**. Le system prompt interdit explicitement LaTeX/symboles/formats lisibles à l'œil. Ajouter des figures GeoGebra dans ce flux casse la cohérence vocale. À traiter à part (voir Q).
 
-### 1. Hero refondu
-- Petit chip au-dessus du titre : « 14 domaines · 80+ notions ».
-- Titre large avec un mot mis en gradient (ex. « Maths **Métier** » avec « Métier » en dégradé bleu → cyan).
-- Sous-titre raffiné + 2 stats inline (domaines couverts, notions explorables).
-- Décor : halo radial bleu très doux derrière le titre, motifs mathématiques déjà présents conservés.
+## Changements
 
-### 2. Cartes de domaines (la grosse amélioration)
-- Chaque domaine reçoit une **couleur d'accent dédiée** (IA = indigo, Data = cyan, ML = violet, BTP = ambre, Agro = vert, Santé = rose, Finance = émeraude, Éco = bleu, Compta = slate, Énergie = jaune, Logistique = orange, Cyber = rouge, Ingé = teal, Éducation = fuchsia).
-- Carte : fond `bg-card`, bordure subtile, **glow d'accent** au hover, légère élévation et translation Y, icône posée dans une **tuile dégradée** colorée (10 % d'opacité de l'accent + ring).
-- Coin supérieur droit : badge pastille (Populaire/Nouveau) repensé avec point coloré + texte fin.
-- Sous-titre limité à 2 lignes, puis liste de 2-3 « tags » (premières notions) en pills discrètes.
-- Bas de carte : bouton `Explorer →` avec flèche qui glisse au hover.
-- Carte sélectionnée : ring d'accent + petit triangle/connector pointant vers la zone notions dépliée.
+### 1) `supabase/functions/math-chat/index.ts` (Chat IA)
 
-### 3. Section notions dépliée
-- Conteneur avec en-tête plus riche : icône + titre du domaine, compteur « 6 notions », et bouton « Tout explorer » discret.
-- Filtre rapide par niveau (Débutant / Intermédiaire / Avancé) en chips toggle (visuel uniquement, sans logique complexe — affichage de tout par défaut, filtrage simple côté state local).
-- Cartes notions : passer du gris uniforme à un fond `card` avec bordure colorée à gauche selon le niveau (vert/ambre/rouge), hover qui fait apparaître l'action « Apprendre » de manière plus marquée, micro-animation sur l'icône `BookOpen`.
+Enrichir le bloc « GRAPHIQUES ET VISUALISATIONS » pour aligner Chat IA sur la fonction `visualize` :
 
-### 4. Bandeau CTA en bas de page
-- Avant le footer : bandeau bleu avec accroche « Vous ne trouvez pas votre métier ? » + bouton vers le Chat IA pour demander une notion sur mesure.
+- Ajouter le champ `"dim"` (`"2d"` par défaut, `"3d"` obligatoire dès qu'on parle de solide, d'espace, de volume, ou de : cube, pavé, sphère, cylindre, cône, pyramide, tétraèdre, prisme, octaèdre, surface `z=f(x,y)`, plan de l'espace, droite de l'espace).
+- Compléter la syntaxe avec les commandes 3D : `Cube(A,B,C)`, `Tetrahedron`, `Octahedron`, `Pyramid`, `Prism`, `Sphere(centre,r)`, `Cylinder(A,B,r)`, `Cone(A,B,r)`, `Plane(A,B,C)`, `Surface(...)`, `f(x,y)=...`.
+- Compléter la syntaxe 2D usuelle (Segment, Vector, Polygon régulier `Polygon(A,B,n)`, Ellipse/Parabola/Hyperbola, Midpoint, PerpendicularBisector, AngleBisector, Tangent, Intersect, Rotate/Reflect/Translate/Dilate).
+- Ajouter 4–5 exemples ciblés (cube, sphère, cylindre, cône, pyramide à base carrée) au même format que `visualize`.
+- Conserver la règle « points manipulables » et le reste du prompt pédagogique (étapes, exemple africain, astuce, signature finale).
 
-### 5. Animations
-- Stagger d'apparition plus nerveux sur les cartes (delay 0.04 au lieu de 0.08).
-- Au hover de carte : `scale(1.01)`, glow d'accent, bordure qui s'illumine.
-- Section notions : `AnimatePresence` conservé, transition légèrement plus fluide.
+### 2) `src/pages/NotionApprentissage.tsx` (Maths Métier → notion)
 
-## Détails techniques
+Renforcer l'étape 5 du prompt initial : préciser explicitement « **bloc ` ```geogebra ` au format JSON `{type,dim,title,code}`, `dim:"3d"` pour tout solide/espace** ». Aucune autre logique à toucher (le rendu passe déjà par `MessageBubble`).
 
-- Fichier principal : `src/pages/MathsMetier.tsx` uniquement.
-- Ajouter une propriété `accent: { from: string; to: string; ring: string }` à chaque entrée de `domains` (valeurs HSL via classes Tailwind arbitraires ou tokens définis dans `tailwind.config.ts`).
-- Ne pas casser la signature : `handleLearn(domaine, notion)` et la navigation vers `/notion?...` restent inchangées.
-- Continuer d'utiliser `lucide-react`, `framer-motion`, `Badge`, `MathSymbolsBackground`, `Navbar`, `Footer` déjà en place.
-- Filtre niveau : `useState<"all" | "Débutant" | "Intermédiaire" | "Avancé">("all")`, filtrage en `.filter()` avant `.map()` dans la liste de notions.
-- Aucune nouvelle dépendance.
+### 3) `src/pages/TuteurIA.tsx` (démo scriptée)
 
-## Hors scope
+- Faire passer le rendu par `MessageBubble` (au lieu du `<p>{msg.text}</p>` actuel) afin que la démo puisse afficher un mini bloc GeoGebra.
+- Ajouter dans le script de démo un message Amara contenant un petit bloc ` ```geogebra ` (ex. un cône ou une sphère) pour illustrer visuellement la capacité 3D. Aucun appel IA n'est ajouté, la démo reste scriptée.
 
-- Pas de changement de la page `/notion` ni de la logique du chat.
-- Pas de refonte de la Navbar / Footer.
-- Pas de retrait/ajout de domaines (les 14 actuels sont conservés).
+### 4) Entretien vocal — à confirmer (voir question)
+
+Par défaut **ne rien changer** : le flux est vocal, l'écran sert au transcript et la consigne TTS interdit les formats visuels. Si l'utilisateur veut quand même afficher des figures pendant l'entretien, on peut autoriser le modèle à émettre un bloc ` ```geogebra ` après sa réponse parlée et l'afficher sous le transcript via `MessageBubble`, sans le lire au TTS.
+
+## Hors-scope
+
+- Pas de refonte du composant `GeoGebraBlock` (le style « image fournie » est déjà en place).
+- Pas de changement du pipeline `visualize` ni du parseur `parseChartBlocks`.
+- Pas de nouvelles dépendances.
+
+## Question
+
+Pour l'**Entretien vocal**, tu préfères :
+- (A) **Ne rien changer** (recommandé — le format est strictement audio) ?
+- (B) Autoriser Amara à afficher des figures GeoGebra sous le transcript, sans les vocaliser ?
