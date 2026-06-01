@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
 import { ExportMenu } from "@/components/chat/ExportMenu";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 
 const chartData = Array.from({ length: 61 }, (_, i) => {
   const x = (i - 30) / 10;
@@ -28,7 +29,7 @@ interface ChatMessage {
 
 const conversationSteps = [
   {
-    ai: { role: "ai" as const, text: "Bonjour ! Je suis Amara, votre tuteur IA. Avant de commencer, dites-moi : connaissez-vous la règle de dérivation des monômes ? Par exemple, si g(x) = xⁿ, que vaut g'(x) ?", time: "14:02" },
+    ai: { role: "ai" as const, text: "Bonjour ! Je suis **Amara**, votre tutrice IA. Avant de commencer, regardons un objet familier — un **cône de révolution** :\n\n```geogebra\n{\"type\":\"geogebra\",\"dim\":\"3d\",\"title\":\"Cône de révolution\",\"code\":\"A=(0,0,0); B=(0,0,4); Cone(A,B,2)\"}\n```\n\nMaintenant une question d'analyse : connaissez-vous la règle de dérivation des monômes ? Par exemple, si $g(x) = x^n$, que vaut $g'(x)$ ?", time: "14:02" },
     expectedConcept: "La règle est n·x^(n-1). Par exemple la dérivée de x^n est n*x^(n-1).",
     nextAi: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
   },
@@ -202,15 +203,20 @@ const TuteurIA = () => {
                           <span className="text-accent-foreground text-xs font-bold">A</span>
                         </div>
                       )}
-                      <div className={`max-w-[85%] ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"} px-4 py-3 shadow-sm`}>
-                        <p className="text-sm leading-relaxed">{msg.text}</p>
-                        <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
-                          <span className={`text-[10px] ${msg.role === "user" ? "text-primary-foreground/50" : "text-muted-foreground"}`}>
-                            {msg.time}
-                          </span>
-                          {msg.role === "user" && <span className="text-[10px] text-primary-foreground/50">✓✓</span>}
+                      {msg.role === "ai" ? (
+                        <div className="flex-1 min-w-0">
+                          <MessageBubble msg={{ role: "assistant", content: msg.text }} />
+                          <div className="text-[10px] text-muted-foreground mt-1 ml-1">{msg.time}</div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="max-w-[85%] chat-bubble-user px-4 py-3 shadow-sm">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                          <div className="flex items-center gap-1 mt-1 justify-end">
+                            <span className="text-[10px] text-primary-foreground/50">{msg.time}</span>
+                            <span className="text-[10px] text-primary-foreground/50">✓✓</span>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </AnimatePresence>

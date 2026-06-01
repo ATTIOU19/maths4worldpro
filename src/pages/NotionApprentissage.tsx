@@ -117,7 +117,7 @@ Structure ta réponse ainsi :
 2. 🧠 **Tout ce qu'il faut savoir** — Concepts clés, formules essentielles (en LaTeX), propriétés importantes.
 3. 🛠️ **Cas pratiques dans le métier "${domaine}"** — 2 à 3 exemples concrets et résolus, ancrés dans la réalité de ce métier en Afrique.
 4. ⚠️ **Pièges courants** à éviter.
-5. 📊 Une **visualisation GeoGebra** si pertinent.
+5. 📊 Une **visualisation GeoGebra** si pertinent — utilise un bloc \`\`\`geogebra contenant un JSON \`{"type":"geogebra","dim":"2d|3d","title":"...","code":"..."}\`. Mets \`"dim":"3d"\` dès qu'il s'agit d'un solide ou de l'espace (cube, sphère, cylindre, cône, pyramide, plan, surface z=f(x,y)). Commandes 3D utiles : \`Cube(A,B,C)\`, \`Sphere(O,r)\`, \`Cylinder(A,B,r)\`, \`Cone(A,B,r)\`, \`Pyramid(A,B,C,D,S)\`, \`Plane(A,B,C)\`, \`f(x,y)=...\`.
 6. ✅ **Points clés à retenir** (3 à 5 bullets).
 
 Termine en m'invitant à poser des questions pour approfondir.`,
