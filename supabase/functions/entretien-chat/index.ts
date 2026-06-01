@@ -20,7 +20,6 @@ serve(async (req) => {
 
 **Contexte de l'entretien :**
 - Notion/Sujet : ${config.notion}
-- Niveau : ${config.niveau}
 - Langue : ${config.langue === "fr" ? "Français" : config.langue}
 
 **Règles strictes :**
@@ -30,7 +29,7 @@ serve(async (req) => {
 4. Numérote tes questions (Question 1, Question 2, etc.).
 5. Pose maximum 5-6 questions au total.
 6. Quand l'élève a répondu à toutes les questions OU que le temps est écoulé, génère un résumé complet au format markdown avec :
-   - Informations de l'entretien (sujet, niveau, nombre de questions)
+   - Informations de l'entretien (sujet, nombre de questions)
    - Note globale sur 20 (évalue honnêtement)
    - Points forts (3 points)
    - Pistes d'amélioration (3-4 points numérotés)

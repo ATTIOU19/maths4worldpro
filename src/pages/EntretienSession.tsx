@@ -17,7 +17,6 @@ interface ChatMessage {
 
 interface InterviewConfig {
   notion: string;
-  niveau: string;
   langue: string;
 }
 
@@ -349,7 +348,7 @@ const EntretienSession = () => {
                 Entretien vocal : {config.notion}
               </p>
               <p className="text-xs text-muted-foreground">
-                {config.niveau} · {config.langue === "fr" ? "Français" : config.langue}
+                {config.langue === "fr" ? "Français" : config.langue}
               </p>
             </div>
           </div>

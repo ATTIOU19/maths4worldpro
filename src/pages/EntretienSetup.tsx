@@ -1,20 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mic, GraduationCap, Globe, BookOpen, ArrowRight } from "lucide-react";
+import { Mic, Globe, BookOpen, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
-
-const niveaux = [
-  "3ème",
-  "Seconde",
-  "Première",
-  "Terminale C/D",
-  "Terminale A/B",
-  "Licence 1",
-  "Licence 2",
-  "Licence 3",
-  "Concours",
-];
 
 const langues = [
   { code: "fr", label: "🇫🇷 Français" },
@@ -26,15 +14,14 @@ const langues = [
 const EntretienSetup = () => {
   const navigate = useNavigate();
   const [notion, setNotion] = useState("");
-  const [niveau, setNiveau] = useState("");
   const [langue, setLangue] = useState("fr");
 
-  const canStart = notion.trim() && niveau && langue;
+  const canStart = notion.trim() && langue;
 
   const handleStart = () => {
     if (!canStart) return;
     navigate("/entretien-vocal/session", {
-      state: { notion: notion.trim(), niveau, langue },
+      state: { notion: notion.trim(), langue },
     });
   };
 
@@ -80,29 +67,6 @@ const EntretienSetup = () => {
                 placeholder="Ex: Les dérivées, Les intégrales, Suites numériques..."
                 className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all"
               />
-            </div>
-
-            {/* Niveau */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-card-foreground mb-2">
-                <GraduationCap size={16} className="text-secondary" />
-                Niveau d'étude
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {niveaux.map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setNiveau(n)}
-                    className={`px-3 py-2.5 rounded-xl text-xs font-medium transition-all border ${
-                      niveau === n
-                        ? "bg-secondary text-secondary-foreground border-secondary shadow-sm"
-                        : "bg-muted text-muted-foreground border-border hover:border-secondary/40"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Langue */}
