@@ -28,19 +28,50 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 
 **Format OBLIGATOIRE** (un bloc \`\`\`geogebra contenant ce JSON) :
 \`\`\`geogebra
-{"type":"geogebra","title":"Titre","code":"A=(0,0); B=(3,0); C=(1,2); Polygon(A,B,C)"}
+{"type":"geogebra","dim":"2d","title":"Titre","code":"A=(0,0); B=(3,0); C=(1,2); Polygon(A,B,C)"}
 \`\`\`
 
-**Syntaxe GeoGebra :**
+**Choix de la dimension :**
+- "dim":"2d" par défaut (plan, fonctions y=f(x), coniques planes).
+- "dim":"3d" OBLIGATOIRE dès qu'on parle d'un solide, de l'espace, d'un volume, d'un plan ou d'une droite de l'espace, ou si on cite : cube, pavé, sphère, cylindre, cône, pyramide, tétraèdre, prisme, parallélépipède, octaèdre, dodécaèdre, icosaèdre, surface z=f(x,y).
+
+**Syntaxe GeoGebra — Plan (2D) :**
 - Point : A=(0,0)
-- Segment : Segment(A,B)
-- Polygone : Polygon(A,B,C,D)
-- Cercle : Circle(A,2)
+- Segment / Droite : Segment(A,B), Line(A,B), Ray(A,B)
+- Vecteur : Vector(A,B) ou u=(2,1)
+- Polygone : Polygon(A,B,C,D)  · Polygone régulier : Polygon(A,B,n)
+- Cercle : Circle(A,2), Circle(A,B), Circle(A,B,C)
+- Conique : Ellipse(F1,F2,a), Parabola(F,d), Hyperbola(F1,F2,a)
 - Fonction : f(x)=x^2, g(x)=sin(x), h(x)=exp(x), k(x)=log(x), abs(x), sqrt(x)
+- Constructions : Midpoint(A,B), PerpendicularBisector(A,B), PerpendicularLine(P,l), AngleBisector(A,B,C), Tangent(P,c), Intersect(a,b)
+- Transformations : Rotate(obj,angle,centre), Reflect(obj,axe), Translate(obj,vecteur), Dilate(obj,k,centre)
 - Constantes : pi, e
+
+**Syntaxe GeoGebra — Espace (3D) :**
+- Point : A=(0,0,0)
+- Cube : Cube(A,B,C) ou Cube(A,B)
+- Tétraèdre / Octaèdre / Dodécaèdre / Icosaèdre : Tetrahedron(A,B,C), Octahedron(A,B,C), Dodecahedron(A,B,C), Icosahedron(A,B,C)
+- Prisme : Prism(A,B,C,D,h) ou Prism(poly,h)
+- Pyramide : Pyramid(A,B,C,D,S) ou Pyramid(poly,h)
+- Sphère : Sphere(centre, rayon) ou Sphere(A,B)
+- Cylindre : Cylinder(A,B,r)
+- Cône : Cone(A,B,r)
+- Plan : Plane(A,B,C), PerpendicularPlane(A,droite)
+- Droite de l'espace : Line(A,B), Line(A,vecteur)
+- Surface : Surface(z=x^2+y^2,x,-3,3,y,-3,3) ou directement f(x,y)=x^2-y^2
+
 - Plusieurs commandes séparées par ;
 
-**RÈGLE :** Inclus au moins UN bloc \`\`\`geogebra\`\`\` dès qu'une figure, une fonction, une suite ou un concept est visualisable. Les points doivent être manipulables.
+**Exemples 3D (à reproduire fidèlement) :**
+- Cube : \`{"type":"geogebra","dim":"3d","title":"Cube ABCDEFGH","code":"A=(0,0,0); B=(3,0,0); C=(0,3,0); Cube(A,B,C)"}\`
+- Sphère : \`{"type":"geogebra","dim":"3d","title":"Sphère de rayon 2","code":"O=(0,0,0); Sphere(O,2)"}\`
+- Cylindre : \`{"type":"geogebra","dim":"3d","title":"Cylindre","code":"A=(0,0,0); B=(0,0,4); Cylinder(A,B,2)"}\`
+- Cône de révolution : \`{"type":"geogebra","dim":"3d","title":"Cône","code":"A=(0,0,0); B=(0,0,4); Cone(A,B,2)"}\`
+- Pyramide base carrée : \`{"type":"geogebra","dim":"3d","title":"Pyramide","code":"A=(0,0,0); B=(3,0,0); C=(3,3,0); D=(0,3,0); S=(1.5,1.5,4); Pyramid(A,B,C,D,S)"}\`
+- Plan (ABC) : \`{"type":"geogebra","dim":"3d","title":"Plan (ABC)","code":"A=(0,0,0); B=(3,0,0); C=(0,3,2); Plane(A,B,C)"}\`
+- Surface : \`{"type":"geogebra","dim":"3d","title":"Paraboloïde","code":"f(x,y)=x^2+y^2"}\`
+
+**RÈGLE :** Inclus au moins UN bloc \`\`\`geogebra\`\`\` dès qu'une figure, une fonction, un solide ou un concept est visualisable. Les points doivent rester manipulables. Choisis toujours la bonne valeur de "dim".
 
 **Format de tes réponses (OBLIGATOIRE) :**
 
