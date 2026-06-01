@@ -203,15 +203,20 @@ const TuteurIA = () => {
                           <span className="text-accent-foreground text-xs font-bold">A</span>
                         </div>
                       )}
-                      <div className={`max-w-[85%] ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"} px-4 py-3 shadow-sm`}>
-                        <p className="text-sm leading-relaxed">{msg.text}</p>
-                        <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
-                          <span className={`text-[10px] ${msg.role === "user" ? "text-primary-foreground/50" : "text-muted-foreground"}`}>
-                            {msg.time}
-                          </span>
-                          {msg.role === "user" && <span className="text-[10px] text-primary-foreground/50">✓✓</span>}
+                      {msg.role === "ai" ? (
+                        <div className="flex-1 min-w-0">
+                          <MessageBubble msg={{ role: "assistant", content: msg.text }} />
+                          <div className="text-[10px] text-muted-foreground mt-1 ml-1">{msg.time}</div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="max-w-[85%] chat-bubble-user px-4 py-3 shadow-sm">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                          <div className="flex items-center gap-1 mt-1 justify-end">
+                            <span className="text-[10px] text-primary-foreground/50">{msg.time}</span>
+                            <span className="text-[10px] text-primary-foreground/50">✓✓</span>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </AnimatePresence>
