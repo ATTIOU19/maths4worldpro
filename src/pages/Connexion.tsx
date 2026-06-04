@@ -75,6 +75,12 @@ const Connexion = () => {
             </div>
           </div>
 
+          <div className="text-right">
+            <Link to="/mot-de-passe-oublie" className="text-sm text-primary font-medium hover:underline">
+              Mot de passe oublié ?
+            </Link>
+          </div>
+
           <Button type="submit" className="w-full" disabled={loading}>
             <LogIn size={18} />
             {loading ? "Connexion…" : "Se connecter"}
