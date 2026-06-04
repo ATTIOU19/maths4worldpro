@@ -11,6 +11,8 @@ import EntretienSetup from "./pages/EntretienSetup";
 import EntretienSession from "./pages/EntretienSession";
 import Inscription from "./pages/Inscription";
 import Connexion from "./pages/Connexion";
+import MotDePasseOublie from "./pages/MotDePasseOublie";
+import ReinitialiserMotDePasse from "./pages/ReinitialiserMotDePasse";
 import ChatIA from "./pages/ChatIA";
 import Visualisation from "./pages/Visualisation";
 import NotionApprentissage from "./pages/NotionApprentissage";
@@ -29,6 +31,8 @@ const App = () => (
           {/* Routes publiques */}
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/connexion" element={<Connexion />} />
+          <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
+          <Route path="/reinitialiser-mot-de-passe" element={<ReinitialiserMotDePasse />} />
 
           {/* Routes protégées */}
           <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
