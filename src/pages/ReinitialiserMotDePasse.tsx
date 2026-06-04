@@ -1,35 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { LogIn, Eye, EyeOff } from "lucide-react";
+import { KeyRound, Eye, EyeOff } from "lucide-react";
 import AuthBackgroundVideo from "@/components/AuthBackgroundVideo";
 
-const Connexion = () => {
+const ReinitialiserMotDePasse = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // Supabase déclenche l'event PASSWORD_RECOVERY après que le lien email crée la session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setReady(true);
+    });
+    // Cas où la session est déjà active (après clic sur lien)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast({ title: "Erreur", description: "Veuillez remplir tous les champs.", variant: "destructive" });
+    if (password.length < 6) {
+      toast({ title: "Mot de passe trop court", description: "Au moins 6 caractères.", variant: "destructive" });
       return;
     }
-
+    if (password !== confirm) {
+      toast({ title: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
     if (error) {
-      toast({ title: "Erreur de connexion", description: error.message, variant: "destructive" });
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Bienvenue !", description: "Connexion réussie." });
+      toast({ title: "Mot de passe mis à jour", description: "Vous êtes connecté." });
       navigate("/");
     }
   };
@@ -45,18 +61,19 @@ const Connexion = () => {
             </div>
             <span className="text-white font-bold text-xl">MATHS4WORLD</span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-4">Se connecter</h1>
-          <p className="text-white/70 mt-1">Accédez à votre espace Maths4World</p>
+          <h1 className="text-2xl font-bold text-white mt-4">Nouveau mot de passe</h1>
+          <p className="text-white/70 mt-1">Choisissez un mot de passe sécurisé</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="amina@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
+          {!ready && (
+            <p className="text-xs text-muted-foreground text-center">
+              Validation du lien en cours… Si rien ne se passe, redemandez un email depuis « Mot de passe oublié ».
+            </p>
+          )}
 
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">Nouveau mot de passe</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -75,27 +92,25 @@ const Connexion = () => {
             </div>
           </div>
 
-          <div className="text-right">
-            <Link to="/mot-de-passe-oublie" className="text-sm text-primary font-medium hover:underline">
-              Mot de passe oublié ?
-            </Link>
+          <div className="space-y-2">
+            <Label htmlFor="confirm">Confirmer le mot de passe</Label>
+            <Input
+              id="confirm"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            <LogIn size={18} />
-            {loading ? "Connexion…" : "Se connecter"}
+          <Button type="submit" className="w-full" disabled={loading || !ready}>
+            <KeyRound size={18} />
+            {loading ? "Mise à jour…" : "Mettre à jour"}
           </Button>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Pas encore de compte ?{" "}
-            <Link to="/inscription" className="text-primary font-medium hover:underline">
-              S'inscrire
-            </Link>
-          </p>
         </form>
       </div>
     </div>
   );
 };
 
-export default Connexion;
+export default ReinitialiserMotDePasse;
