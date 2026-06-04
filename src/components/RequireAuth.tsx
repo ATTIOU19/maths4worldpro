@@ -32,7 +32,7 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!session) {
-    return <Navigate to="/connexion" replace state={{ from: location }} />;
+    return <Navigate to="/inscription" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
