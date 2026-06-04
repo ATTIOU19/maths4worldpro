@@ -1,9 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, Sparkles, BookOpen, ArrowRight, Download } from "lucide-react";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
-} from "recharts";
+import { Send, Mic, Sparkles, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,127 +9,153 @@ import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
 import { ExportMenu } from "@/components/chat/ExportMenu";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 
-const chartData = Array.from({ length: 61 }, (_, i) => {
-  const x = (i - 30) / 10;
-  return {
-    x: Math.round(x * 100) / 100,
-    "f(x)": Math.round((x ** 3 - 2 * x + 1) * 100) / 100,
-    "f'(x)": Math.round((3 * x ** 2 - 2) * 100) / 100,
-  };
-});
-
 interface ChatMessage {
   role: "user" | "ai";
   text: string;
   time: string;
 }
 
-const conversationSteps = [
-  {
-    ai: { role: "ai" as const, text: "Bonjour ! Je suis **Amara**, votre tutrice IA. Avant de commencer, regardons un objet familier — un **cône de révolution** :\n\n```geogebra\n{\"type\":\"geogebra\",\"dim\":\"3d\",\"title\":\"Cône de révolution\",\"code\":\"A=(0,0,0); B=(0,0,4); Cone(A,B,2)\"}\n```\n\nMaintenant une question d'analyse : connaissez-vous la règle de dérivation des monômes ? Par exemple, si $g(x) = x^n$, que vaut $g'(x)$ ?", time: "14:02" },
-    expectedConcept: "La règle est n·x^(n-1). Par exemple la dérivée de x^n est n*x^(n-1).",
-    nextAi: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
-  },
-  {
-    ai: { role: "ai" as const, text: "Exactement ! Vous venez de retrouver la règle fondamentale : si g(x) = xⁿ, alors g'(x) = n·xⁿ⁻¹. Maintenant, appliquez cette règle terme par terme à f(x) = x³ - 2x + 1. Que donnent les dérivées de chaque terme ?", time: "14:03" },
-    expectedConcept: "f'(x) = 3x² - 2. Accepter aussi 3x^2 - 2 ou toute formulation équivalente.",
-    nextAi: { role: "ai" as const, text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
-  },
-  {
-    ai: { role: "ai" as const, text: "🎉 Parfait ! Vous avez tout juste. Donc f'(x) = 3x² - 2. Observez le graphique à droite : les zones où f'(x) > 0 correspondent aux portions croissantes de f(x). Voyez-vous le lien ?", time: "14:04" },
-    expectedConcept: "Quand la dérivée f'(x) est positive, la fonction f(x) est croissante. Quand f'(x) est négative, f(x) est décroissante.",
-    nextAi: null,
-  },
-];
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/math-chat`;
+
+const nowTime = () =>
+  new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+async function streamTutorChat({
+  messages,
+  fileContext,
+  onDelta,
+  onDone,
+}: {
+  messages: { role: "user" | "assistant"; content: string }[];
+  fileContext?: string;
+  onDelta: (t: string) => void;
+  onDone: () => void;
+}) {
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages, fileContext, tutorMode: true }),
+  });
+
+  if (resp.status === 429) {
+    toast.error("Trop de requêtes, réessayez dans un moment.");
+    throw new Error("rate limited");
+  }
+  if (resp.status === 402) {
+    toast.error("Crédits IA épuisés.");
+    throw new Error("payment required");
+  }
+  if (!resp.ok || !resp.body) throw new Error("stream error");
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let done = false;
+  while (!done) {
+    const { done: d, value } = await reader.read();
+    if (d) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf("\n")) !== -1) {
+      let line = buf.slice(0, idx);
+      buf = buf.slice(idx + 1);
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (!line.startsWith("data: ")) continue;
+      const json = line.slice(6).trim();
+      if (json === "[DONE]") { done = true; break; }
+      try {
+        const c = JSON.parse(json).choices?.[0]?.delta?.content;
+        if (c) onDelta(c);
+      } catch {
+        buf = line + "\n" + buf;
+        break;
+      }
+    }
+  }
+  onDone();
+}
 
 const TuteurIA = () => {
-  const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [started, setStarted] = useState(false);
   const [attached, setAttached] = useState<AttachedFile | null>(null);
+  const [userName, setUserName] = useState<string>("");
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const showChart = step >= 2;
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("prenoms, nom")
+        .eq("id", user.id)
+        .maybeSingle();
+      const prenom = (data?.prenoms || "").split(" ")[0]?.trim();
+      if (prenom) setUserName(prenom);
+    })();
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const startConversation = () => {
     setStarted(true);
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages([conversationSteps[0].ai]);
-      setIsTyping(false);
-    }, 1000);
+    const greet = userName
+      ? `Bonjour **${userName}** ! 👋 Je suis **Amara**, ta tutrice IA en mathématiques.\n\nQue souhaites-tu **maîtriser aujourd'hui** ? (ex: les dérivées, le théorème de Pythagore, les intégrales, la trigonométrie…)`
+      : `Bonjour ! 👋 Je suis **Amara**, ta tutrice IA en mathématiques.\n\nQue souhaites-tu **maîtriser aujourd'hui** ? (ex: les dérivées, le théorème de Pythagore, les intégrales, la trigonométrie…)`;
+    setMessages([{ role: "ai", text: greet, time: nowTime() }]);
   };
 
   const handleSend = async () => {
-    if (isTyping || step >= conversationSteps.length || !input.trim()) return;
+    if (isTyping || !input.trim()) return;
 
-    const currentStep = conversationSteps[step];
-    const userText = attached
-      ? `${input.trim()}\n\n[Fichier joint : ${attached.name}]\n${attached.text.slice(0, 2000)}`
-      : input.trim();
-    const userMsg: ChatMessage = {
-      role: "user",
-      text: attached ? `${input.trim()} 📎 ${attached.name}` : input.trim(),
-      time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-    };
+    const userText = input.trim();
+    const userVisible = attached ? `${userText} 📎 ${attached.name}` : userText;
+    const fileCtx = attached?.text;
 
-    setMessages((prev) => [...prev, userMsg]);
+    const userMsg: ChatMessage = { role: "user", text: userVisible, time: nowTime() };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
     setInput("");
     setAttached(null);
     setIsTyping(true);
 
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-answer", {
-        body: {
-          question: currentStep.ai.text,
-          userAnswer: userText,
-          expectedConcept: currentStep.expectedConcept,
-        },
-      });
+    const history = updated.map((m) => ({
+      role: (m.role === "ai" ? "assistant" : "user") as "user" | "assistant",
+      content: m.text,
+    }));
 
-      if (error) throw error;
-
-      const { correct, feedback } = data;
-
-      if (correct) {
-        // Show AI feedback then advance
-        const feedbackMsg: ChatMessage = {
-          role: "ai",
-          text: feedback,
-          time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, feedbackMsg]);
-
-        const nextStep = step + 1;
-        setStep(nextStep);
-
-        // Show next scripted AI message after a delay
-        if (currentStep.nextAi && nextStep < conversationSteps.length) {
-          setTimeout(() => {
-            setMessages((prev) => [...prev, conversationSteps[nextStep].ai]);
-            setIsTyping(false);
-          }, 1500);
-          return;
+    let acc = "";
+    const upsert = (chunk: string) => {
+      acc += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "ai") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, text: acc } : m));
         }
-      } else {
-        // Show correction feedback, stay on same step
-        const feedbackMsg: ChatMessage = {
-          role: "ai",
-          text: feedback,
-          time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, feedbackMsg]);
-      }
+        return [...prev, { role: "ai", text: acc, time: nowTime() }];
+      });
+    };
+
+    try {
+      await streamTutorChat({
+        messages: history,
+        fileContext: fileCtx,
+        onDelta: upsert,
+        onDone: () => setIsTyping(false),
+      });
     } catch (e) {
-      console.error("Verification error:", e);
-      toast.error("Erreur lors de la vérification. Réessayez.");
+      console.error(e);
+      setIsTyping(false);
     }
-
-    setIsTyping(false);
   };
-
-  const isConversationDone = step >= conversationSteps.length;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
