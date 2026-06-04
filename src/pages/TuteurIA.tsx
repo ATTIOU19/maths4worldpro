@@ -257,22 +257,7 @@ const TuteurIA = () => {
                   </div>
                 )}
 
-                {isConversationDone && !isTyping && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center py-4"
-                  >
-                    <p className="text-xs text-muted-foreground mb-3">✅ Démo terminée ! Essayez un vrai entretien.</p>
-                    <a
-                      href="/entretien-vocal"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:brightness-110 transition-all"
-                    >
-                      Lancer un entretien vocal
-                      <ArrowRight size={14} />
-                    </a>
-                  </motion.div>
-                )}
+                <div ref={bottomRef} />
               </>
             )}
           </div>
@@ -285,7 +270,7 @@ const TuteurIA = () => {
               </div>
             )}
             <div className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 shadow-sm">
-              {!attached && started && !isConversationDone && (
+              {!attached && started && (
                 <FileUpload onFile={setAttached} attached={null} onClear={() => setAttached(null)} disabled={isTyping} />
               )}
               <input
@@ -293,8 +278,8 @@ const TuteurIA = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder={!started ? "Cliquez sur « Commencer la démo »" : isConversationDone ? "Démo terminée" : "Tapez votre réponse..."}
-                disabled={!started || isTyping || isConversationDone}
+                placeholder={!started ? "Cliquez sur « Commencer la démo »" : "Tapez votre réponse..."}
+                disabled={!started || isTyping}
                 className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground disabled:opacity-50"
               />
               <button className="relative w-9 h-9 rounded-full bg-accent flex items-center justify-center mic-pulse">
@@ -302,7 +287,7 @@ const TuteurIA = () => {
               </button>
               <button
                 onClick={handleSend}
-                disabled={!started || isTyping || isConversationDone || !input.trim()}
+                disabled={!started || isTyping || !input.trim()}
                 className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-50"
               >
                 <Send size={16} className="text-secondary-foreground" />
@@ -317,68 +302,18 @@ const TuteurIA = () => {
           <div className="p-6">
             <div className="flex items-center gap-2 mb-6">
               <Sparkles size={20} className="text-secondary" />
-              <h2 className="text-lg font-bold text-foreground">Réponse Visuelle Automatique</h2>
+              <h2 className="text-lg font-bold text-foreground">Tableau d'apprentissage</h2>
             </div>
 
-            {showChart ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="space-y-6"
-              >
-                <div className="bg-card rounded-2xl p-6 shadow-card">
-                  <h3 className="text-sm font-semibold text-card-foreground mb-4">
-                    f(x) = x³ - 2x + 1 et sa dérivée f'(x) = 3x² - 2
-                  </h3>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 20% 90%)" />
-                      <XAxis dataKey="x" tick={{ fontSize: 11 }} stroke="hsl(210 10% 50%)" />
-                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(210 10% 50%)" />
-                      <Tooltip
-                        contentStyle={{
-                          background: "white",
-                          border: "1px solid hsl(210 20% 90%)",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
-                      <ReferenceLine x={0} stroke="hsl(210 10% 70%)" strokeDasharray="4 4" />
-                      <ReferenceLine y={0} stroke="hsl(210 10% 70%)" strokeDasharray="4 4" />
-                      <Line type="monotone" dataKey="f(x)" stroke="#2E86C1" strokeWidth={3} dot={false} activeDot={{ r: 5, fill: "#2E86C1" }} />
-                      <Line type="monotone" dataKey="f'(x)" stroke="#E67E22" strokeWidth={2.5} strokeDasharray="6 3" dot={false} activeDot={{ r: 5, fill: "#E67E22" }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-card rounded-2xl p-6 shadow-card border-l-4 border-accent">
-                  <h4 className="text-sm font-bold text-card-foreground mb-2 flex items-center gap-2">
-                    🌍 Application en contexte africain
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Un commerçant au marché Dantokpa (Cotonou) stocke q(x) = x³ - 2x + 1 tonnes de mil selon le prix x (en milliers de FCFA). La dérivée q'(x) = 3x² - 2 indique la vitesse de variation de son stock. À x = 1, q'(1) = 1 {">"} 0 : son stock augmente.
-                  </p>
-                </div>
-
-                <div className="bg-card rounded-2xl p-5 shadow-card flex items-center gap-3">
-                  <BookOpen size={20} className="text-secondary" />
-                  <div>
-                    <span className="text-xs font-semibold text-secondary">📚 Programme officiel</span>
-                    <p className="text-sm text-card-foreground">Chapitre 7 — Dérivation · BAC C/D Bénin · Niveau : Terminale</p>
-                  </div>
-                </div>
-
-                <p className="text-right text-[11px] text-muted-foreground">
-                  Généré automatiquement par MATHS4WORLD ✓
-                </p>
-              </motion.div>
-            ) : (
-              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-                {started ? "Continuez la conversation pour voir le graphique..." : "Lancez la démo pour commencer"}
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center text-muted-foreground text-sm px-8 gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                <Sparkles size={28} className="text-accent" />
               </div>
-            )}
+              <p className="max-w-md">
+                Les <strong>figures, courbes et solides 3D</strong> (cône, sphère, cylindre…) générés par Amara apparaissent directement dans la conversation à gauche.
+              </p>
+              <p className="text-xs">Dis-lui ce que tu veux explorer pour commencer !</p>
+            </div>
           </div>
         </div>
       </div>
