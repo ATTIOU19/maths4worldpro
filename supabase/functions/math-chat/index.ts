@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, fileContext } = await req.json();
+    const { messages, fileContext, tutorMode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -107,6 +107,18 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 - Adapte le niveau (primaire → université)
 - Si hors-sujet maths, redirige poliment`;
 
+    const tutorAddendum = `
+
+**MODE TUTEUR INTERACTIF (PRIORITAIRE) :**
+- Lorsque l'utilisateur annonce une notion qu'il veut maîtriser (sa première réponse), commence par un **BRIEF de 5 lignes MAXIMUM** : définition simple, utilité concrète, et plan d'exploration.
+- Inclus, si pertinent, UN bloc \`\`\`geogebra\`\`\` dans ce brief.
+- Ensuite, enchaîne par **UNE seule question socratique** pour vérifier les prérequis.
+- Pose les questions UNE PAR UNE, jamais en rafale.
+- Si l'utilisateur pose lui-même une question, réponds-y clairement avant de reprendre le fil.
+- Adopte un ton chaleureux et tutoie l'utilisateur.`;
+
+    const finalSystemPrompt = tutorMode ? systemPrompt + tutorAddendum : systemPrompt;
+
     const messagesWithContext = fileContext
       ? [
           ...messages.slice(0, -1),
@@ -128,7 +140,7 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: finalSystemPrompt },
             ...messagesWithContext,
           ],
           stream: true,
