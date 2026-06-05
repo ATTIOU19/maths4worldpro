@@ -35,7 +35,7 @@ const App = () => (
           <Route path="/reinitialiser-mot-de-passe" element={<ReinitialiserMotDePasse />} />
 
           {/* Routes protégées */}
-          <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
+          <Route path="/" element={<Index />} />
           <Route path="/tuteur-ia" element={<RequireAuth><TuteurIA /></RequireAuth>} />
           <Route path="/maths-metier" element={<RequireAuth><MathsMetier /></RequireAuth>} />
           <Route path="/a-propos" element={<RequireAuth><APropos /></RequireAuth>} />
