@@ -1,8 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo-maths4world.jpeg";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import type { Session } from "@supabase/supabase-js";
 
 const navLinks = [
   { label: "Accueil", to: "/" },
@@ -14,9 +17,34 @@ const navLinks = [
   { label: "À propos", to: "/a-propos" },
 ];
 
+const PUBLIC_PATHS = new Set(["/"]);
+
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    supabase.auth.getSession().then(({ data: { session: s } }) => setSession(s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const isAuthed = !!session;
+
+  const handleNavClick = (e: React.MouseEvent, to: string) => {
+    if (!isAuthed && !PUBLIC_PATHS.has(to)) {
+      e.preventDefault();
+      setMobileOpen(false);
+      navigate("/connexion", { state: { from: to } });
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md border-b border-primary-foreground/10">
@@ -31,6 +59,7 @@ const Navbar = () => {
             <Link
               key={link.to}
               to={link.to}
+              onClick={(e) => handleNavClick(e, link.to)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 location.pathname === link.to
                   ? "bg-primary-foreground/15 text-primary-foreground"
@@ -43,18 +72,29 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-2">
-          <Link
-            to="/connexion"
-            className="px-4 py-2 text-primary-foreground/80 hover:text-primary-foreground text-sm font-medium transition-colors"
-          >
-            Connexion
-          </Link>
-          <Link
-            to="/inscription"
-            className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:brightness-110 transition-all duration-200 shadow-hero"
-          >
-            S'inscrire
-          </Link>
+          {isAuthed ? (
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:brightness-110 transition-all duration-200 shadow-hero"
+            >
+              Se déconnecter
+            </button>
+          ) : (
+            <>
+              <Link
+                to="/connexion"
+                className="px-4 py-2 text-primary-foreground/80 hover:text-primary-foreground text-sm font-medium transition-colors"
+              >
+                Connexion
+              </Link>
+              <Link
+                to="/inscription"
+                className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:brightness-110 transition-all duration-200 shadow-hero"
+              >
+                S'inscrire
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -78,7 +118,7 @@ const Navbar = () => {
                 <Link
                   key={link.to}
                   to={link.to}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={(e) => { handleNavClick(e, link.to); setMobileOpen(false); }}
                   className={`px-4 py-3 rounded-lg text-sm font-medium ${
                     location.pathname === link.to
                       ? "bg-primary-foreground/15 text-primary-foreground"
@@ -88,20 +128,31 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
-              <Link
-                to="/connexion"
-                onClick={() => setMobileOpen(false)}
-                className="mt-2 px-5 py-3 border border-primary-foreground/20 text-primary-foreground rounded-lg text-sm font-semibold text-center"
-              >
-                Connexion
-              </Link>
-              <Link
-                to="/inscription"
-                onClick={() => setMobileOpen(false)}
-                className="px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
-              >
-                S'inscrire
-              </Link>
+              {isAuthed ? (
+                <button
+                  onClick={() => { setMobileOpen(false); handleLogout(); }}
+                  className="mt-2 px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
+                >
+                  Se déconnecter
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/connexion"
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-2 px-5 py-3 border border-primary-foreground/20 text-primary-foreground rounded-lg text-sm font-semibold text-center"
+                  >
+                    Connexion
+                  </Link>
+                  <Link
+                    to="/inscription"
+                    onClick={() => setMobileOpen(false)}
+                    className="px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
+                  >
+                    S'inscrire
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
