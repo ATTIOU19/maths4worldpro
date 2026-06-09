@@ -1,25 +1,34 @@
-## Objectif
-Rendre la page d'accueil (`/`) publique et accessible sans connexion. Tous les autres onglets (Chat IA, Visualisation, Tuteur IA, Entretien Vocal, Maths Métier, À propos) restent protégés : si un visiteur non connecté clique sur l'un d'eux, il est redirigé vers la page de connexion.
+## Problème
 
-## Changements prévus
+La vidéo d'arrière-plan de la page de connexion ne s'affiche que sur l'aperçu Lovable (et `*.lovable.app`), pas sur le déploiement Vercel.
 
-### 1. App.tsx
-- Retirer `<RequireAuth>` autour de la route `/` pour laisser l'accueil accessible publiquement.
-- Toutes les autres routes gardent leur `<RequireAuth>` existant.
+La raison : le fichier `public/videos/auth-bg.mp4.asset.json` pointe vers une URL **relative** propre à l'hébergement Lovable :
 
-### 2. Navbar.tsx
-- Ajouter un hook d'authentification (`supabase.auth.getSession` + `onAuthStateChange`) pour connaître l'état de connexion.
-- Si l'utilisateur **n'est pas connecté** :
-  - Les liens du menu vers les pages protégées (`/chat`, `/visualisation`, `/tuteur-ia`, `/entretien-vocal`, `/maths-metier`, `/a-propos`) pointent vers `/connexion` au lieu de leur route directe.
-  - Le clic sur un de ces liels redirige vers la page de connexion avec un état de redirection (`state={{ from: link.to }}`) pour revenir après connexion.
-- Si l'utilisateur **est connecté** :
-  - Les liens pointent normalement vers leur route.
-  - Le bouton "S'inscrire" est remplacé par un bouton de déconnexion (ou un menu utilisateur).
-- Les liens publics (`/`, `/connexion`, `/inscription`) restent inchangés.
+```
+/__l5e/assets-v1/9ac54379-.../auth-bg.mp4
+```
 
-### 3. Connexion.tsx
-- Vérifier que la redirection post-connexion (`navigate("/")`) fonctionne correctement ; pas de changement majeur requis.
+Ce chemin `/__l5e/...` est réécrit par les serveurs Lovable vers leur CDN. Vercel ne connaît pas cette règle de réécriture → la requête renvoie 404 et la balise `<video>` reste vide (on ne voit que les overlays bleus).
 
-## Détail technique
-- Pas de modification de la base de données ni des edge functions.
-- Aucun changement sur `RequireAuth.tsx` : le composant continue de fonctionner normalement pour les routes protégées.
+## Solution
+
+Héberger la vidéo en local dans le repo et la servir directement depuis `/public`, ce qui fonctionne sur n'importe quel hébergeur (Lovable, Vercel, Netlify, etc.).
+
+### Étapes
+
+1. Récupérer le binaire `auth-bg.mp4` depuis l'URL Lovable actuelle et le placer dans `public/videos/auth-bg.mp4` (≈ 23 Mo).
+2. Modifier `src/components/AuthBackgroundVideo.tsx` :
+   - Supprimer l'import du pointeur JSON.
+   - Utiliser `src="/videos/auth-bg.mp4"` directement.
+3. Supprimer le fichier `public/videos/auth-bg.mp4.asset.json` devenu inutile.
+
+### Détails techniques
+
+- Le dossier `public/` de Vite est copié tel quel dans `dist/` au build, donc `/videos/auth-bg.mp4` sera disponible à la racine sur Vercel.
+- Ajout d'attributs `preload="auto"` recommandé pour démarrer le téléchargement tôt.
+- La taille (~23 Mo) reste raisonnable pour une page d'auth ; aucune compression supplémentaire prévue dans ce plan (peut être faite plus tard si besoin).
+
+### Hors périmètre
+
+- Pas de changement visuel (overlays, filtres, mise en page conservés).
+- Pas de modification de la logique d'authentification.
