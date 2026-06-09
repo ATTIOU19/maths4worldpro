@@ -1,13 +1,12 @@
-import authBgVideo from "@/../public/videos/auth-bg.mp4.asset.json";
-
 const AuthBackgroundVideo = () => (
   <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
     <video
-      src={(authBgVideo as { url: string }).url}
+      src="/videos/auth-bg.mp4"
       autoPlay
       loop
       muted
       playsInline
+      preload="auto"
       className="absolute inset-0 w-full h-full object-cover"
       style={{ filter: "hue-rotate(-10deg) saturate(1.1)" }}
     />
