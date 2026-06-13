@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, Sparkles, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
 import { ExportMenu } from "@/components/chat/ExportMenu";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { parseChartBlocks, ChartBlock, FunctionPlotBlock } from "@/components/chat/ChartRenderer";
+import { GeoGebraBlock } from "@/components/chat/GeoGebraBlock";
 
 interface ChatMessage {
   role: "user" | "ai";
@@ -86,6 +88,29 @@ const TuteurIA = () => {
   const [attached, setAttached] = useState<AttachedFile | null>(null);
   const [userName, setUserName] = useState<string>("");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Extraire la DERNIÈRE figure (geogebra > graph > chart) trouvée dans les réponses d'Amara
+  const latestVisual = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "ai") continue;
+      const parts = parseChartBlocks(m.text);
+      for (let j = parts.length - 1; j >= 0; j--) {
+        const p = parts[j];
+        if (p.geogebra) return { kind: "geogebra" as const, data: p.geogebra };
+        if (p.graph) return { kind: "graph" as const, data: p.graph };
+        if (p.chart) return { kind: "chart" as const, data: p.chart };
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const renderVisual = () => {
+    if (!latestVisual) return null;
+    if (latestVisual.kind === "geogebra") return <GeoGebraBlock data={latestVisual.data} />;
+    if (latestVisual.kind === "graph") return <FunctionPlotBlock graph={latestVisual.data} />;
+    return <ChartBlock chart={latestVisual.data} />;
+  };
 
   useEffect(() => {
     (async () => {
@@ -228,7 +253,7 @@ const TuteurIA = () => {
                       )}
                       {msg.role === "ai" ? (
                         <div className="flex-1 min-w-0">
-                          <MessageBubble msg={{ role: "assistant", content: msg.text }} />
+                          <MessageBubble msg={{ role: "assistant", content: msg.text }} hideVisuals />
                           <div className="text-[10px] text-muted-foreground mt-1 ml-1">{msg.time}</div>
                         </div>
                       ) : (
@@ -259,6 +284,17 @@ const TuteurIA = () => {
 
                 <div ref={bottomRef} />
               </>
+            )}
+
+            {/* Tableau mobile — sous le chat, masqué sur desktop */}
+            {latestVisual && (
+              <div className="lg:hidden mt-4 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={16} className="text-secondary" />
+                  <h3 className="text-sm font-bold text-foreground">Tableau d'apprentissage</h3>
+                </div>
+                {renderVisual()}
+              </div>
             )}
           </div>
 
@@ -305,15 +341,19 @@ const TuteurIA = () => {
               <h2 className="text-lg font-bold text-foreground">Tableau d'apprentissage</h2>
             </div>
 
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center text-muted-foreground text-sm px-8 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
-                <Sparkles size={28} className="text-accent" />
+            {latestVisual ? (
+              <div>{renderVisual()}</div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[60vh] text-center text-muted-foreground text-sm px-8 gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                  <Sparkles size={28} className="text-accent" />
+                </div>
+                <p className="max-w-md">
+                  Les <strong>figures, courbes et solides 3D</strong> (cône, sphère, cylindre…) générées par Amara apparaîtront ici, en grand format.
+                </p>
+                <p className="text-xs">Dis-lui ce que tu veux explorer pour commencer !</p>
               </div>
-              <p className="max-w-md">
-                Les <strong>figures, courbes et solides 3D</strong> (cône, sphère, cylindre…) générés par Amara apparaissent directement dans la conversation à gauche.
-              </p>
-              <p className="text-xs">Dis-lui ce que tu veux explorer pour commencer !</p>
-            </div>
+            )}
           </div>
         </div>
       </div>

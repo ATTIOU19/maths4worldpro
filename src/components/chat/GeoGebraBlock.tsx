@@ -1,4 +1,4 @@
-import { useEffect, useRef, useId } from "react";
+import { useEffect, useRef, useId, useState } from "react";
 
 declare global {
   interface Window {
@@ -177,14 +177,37 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const reactId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const idRef = useRef(`ggb-${reactId}`);
+  const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(false);
+
+  // Lazy init when the wrapper enters the viewport
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    io.observe(wrapperRef.current);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!containerRef.current || !window.GGBApplet) return;
+    if (!visible || !containerRef.current) return;
     const id = idRef.current;
     const is3D = data.dim === "3d";
     let appletReady = false;
     let cancelled = false;
     let apiRef: any = null;
+    let waitTimer: any = null;
 
     const computeSize = () => {
       const w = containerRef.current?.clientWidth || 800;
@@ -217,6 +240,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
         if (cancelled) return;
         appletReady = true;
         apiRef = api;
+        setLoading(false);
         try {
           api.reset();
           try {
@@ -357,9 +381,29 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       },
     };
 
-    const applet = new window.GGBApplet(params, true);
-    containerRef.current.innerHTML = `<div id="${id}"></div>`;
-    applet.inject(id);
+    const startApplet = () => {
+      if (cancelled || !containerRef.current || !window.GGBApplet) return;
+      const applet = new window.GGBApplet(params, true);
+      containerRef.current.innerHTML = `<div id="${id}"></div>`;
+      applet.inject(id);
+    };
+
+    if (window.GGBApplet) {
+      startApplet();
+    } else {
+      // Wait until deployggb.js (loaded with defer) is ready
+      const startedAt = Date.now();
+      waitTimer = setInterval(() => {
+        if (cancelled) { clearInterval(waitTimer); return; }
+        if (window.GGBApplet) {
+          clearInterval(waitTimer);
+          startApplet();
+        } else if (Date.now() - startedAt > 10000) {
+          clearInterval(waitTimer);
+          console.error("GeoGebra script not available after 10s");
+        }
+      }, 60);
+    }
 
     // Resize on container width change
     const ro = new ResizeObserver(() => {
@@ -371,17 +415,26 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
 
     return () => {
       cancelled = true;
+      if (waitTimer) clearInterval(waitTimer);
       ro.disconnect();
       if (containerRef.current) containerRef.current.innerHTML = "";
     };
-  }, [data.code, data.dim]);
+  }, [data.code, data.dim, visible]);
 
   return (
     <div ref={wrapperRef} className="my-4 p-3 rounded-2xl border border-border bg-card shadow-lg ggb-wrapper">
       {data.title && (
         <h4 className="text-base font-semibold text-foreground mb-3 text-center tracking-tight">{data.title}</h4>
       )}
-      <div ref={containerRef} className="w-full overflow-hidden rounded-xl ggb-container" style={{ background: "#FFFFFF" }} />
+      <div className="relative w-full overflow-hidden rounded-xl" style={{ background: "#FFFFFF" }}>
+        {loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40 animate-pulse z-10 pointer-events-none" style={{ minHeight: 320 }}>
+            <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <p className="text-xs text-muted-foreground">Préparation de la figure…</p>
+          </div>
+        )}
+        <div ref={containerRef} className="w-full ggb-container" style={{ minHeight: 320 }} />
+      </div>
       <p className="text-[11px] text-muted-foreground text-center mt-2">
         {is3DLabel(data.dim)}
       </p>
