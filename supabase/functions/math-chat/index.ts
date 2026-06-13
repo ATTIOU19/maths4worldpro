@@ -40,6 +40,8 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 - Segment / Droite : Segment(A,B), Line(A,B), Ray(A,B)
 - Vecteur : Vector(A,B) ou u=(2,1)
 - Polygone : Polygon(A,B,C,D)  · Polygone régulier : Polygon(A,B,n)
+- ⚠️ TRIANGLE ÉQUILATÉRAL / CARRÉ / PENTAGONE / HEXAGONE à partir de DEUX points : utilise OBLIGATOIREMENT \`Polygon(A,B,n)\` (n = nombre de côtés). N'écris JAMAIS \`Polygon(A,B,C)\` sans avoir défini le point C avant.
+- Si tu nommes des sommets non donnés, définis-les explicitement AVANT le Polygon (ex: \`C=(2, 3.464); Polygon(A,B,C)\`).
 - Cercle : Circle(A,2), Circle(A,B), Circle(A,B,C)
 - Conique : Ellipse(F1,F2,a), Parabola(F,d), Hyperbola(F1,F2,a)
 - Fonction : f(x)=x^2, g(x)=sin(x), h(x)=exp(x), k(x)=log(x), abs(x), sqrt(x)
