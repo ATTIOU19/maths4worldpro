@@ -156,16 +156,34 @@ function evalGeoGebraCommand(api: any, cmd: string): boolean {
     } catch {}
   }
 
-  // Polygon fallback : Polygon(A,B,C,...) avec points non définis → Polygon(A,B,n)
-  const polyMatch = cmd.match(/Polygon\s*\((.*)\)\s*$/i);
+  // Polygon fallback : si Polygon(A,B,C,...) échoue mais que les points existent,
+  // tracer des segments entre les sommets consécutifs (et fermer la figure).
+  const polyMatch = cmd.match(/(?:\w+\s*=\s*)?Polygon\s*\((.*)\)\s*$/i);
   if (polyMatch) {
     const args = splitArgs(polyMatch[1]);
-    if (args.length >= 3 && args.every((a) => /^[A-Za-z]\w*$/.test(a))) {
-      const first = args[0], second = args[1], n = args.length;
-      try {
-        const result = api.evalCommand(`Polygon(${first},${second},${n})`);
-        if (result !== false) return true;
-      } catch {}
+    const pointArgs = args.filter((a) => /^[A-Za-z]\w*$/.test(a));
+    if (pointArgs.length >= 3) {
+      const defined = pointArgs.filter((p) => {
+        try { return getPoint2D(api, p) !== null; } catch { return false; }
+      });
+      if (defined.length >= 3) {
+        let ok = false;
+        for (let i = 0; i < defined.length; i++) {
+          const a = defined[i], b = defined[(i + 1) % defined.length];
+          try {
+            const r = api.evalCommand(`Segment(${a},${b})`);
+            if (r !== false) ok = true;
+          } catch {}
+        }
+        if (ok) return true;
+      }
+      // Sinon : tenter un polygone régulier basé sur les 2 premiers points (n côtés)
+      if (pointArgs.length === args.length) {
+        try {
+          const r = api.evalCommand(`Polygon(${args[0]},${args[1]},${args.length})`);
+          if (r !== false) return true;
+        } catch {}
+      }
     }
   }
 
