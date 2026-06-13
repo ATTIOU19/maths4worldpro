@@ -155,6 +155,20 @@ function evalGeoGebraCommand(api: any, cmd: string): boolean {
       if (result !== false) return true;
     } catch {}
   }
+
+  // Polygon fallback : Polygon(A,B,C,...) avec points non définis → Polygon(A,B,n)
+  const polyMatch = cmd.match(/Polygon\s*\((.*)\)\s*$/i);
+  if (polyMatch) {
+    const args = splitArgs(polyMatch[1]);
+    if (args.length >= 3 && args.every((a) => /^[A-Za-z]\w*$/.test(a))) {
+      const first = args[0], second = args[1], n = args.length;
+      try {
+        const result = api.evalCommand(`Polygon(${first},${second},${n})`);
+        if (result !== false) return true;
+      } catch {}
+    }
+  }
+
   console.warn("GeoGebra command failed:", cmd);
   return false;
 }
