@@ -75,6 +75,137 @@ function circumcircle(points: { x: number; y: number }[]) {
   return { x: ux, y: uy, r };
 }
 
+function getObjectNames(api: any): string[] {
+  try {
+    return api.getAllObjectNames?.() || [];
+  } catch {
+    return [];
+  }
+}
+
+function commandCreatesObject(cmd: string): boolean {
+  return /\b(Polygon|Segment|Line|Ray|Circle|Ellipse|Parabola|Hyperbola|Vector|Polyline|PolyLine|CircularArc|Arc|Sector|Semicircle|Cube|Prism|Pyramid|Cone|Cylinder|Sphere|Plane|Surface)\s*(?:\(|\[)/i.test(cmd);
+}
+
+function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
+  const before = expectObject ? new Set(getObjectNames(api)) : null;
+  try {
+    const result = api.evalCommand(cmd);
+    if (result === false) return false;
+  } catch {
+    return false;
+  }
+  if (!expectObject || !before) return true;
+  const after = getObjectNames(api);
+  if (after.some((name) => !before.has(name))) return true;
+  try {
+    const labels = api.evalCommandGetLabels?.(cmd);
+    return Boolean(labels && String(labels).trim());
+  } catch {
+    return false;
+  }
+}
+
+function roundCoord(n: number) {
+  return Number(n.toFixed(6));
+}
+
+function nextAvailableLabel(api: any, prefix: string) {
+  const names = new Set(getObjectNames(api));
+  for (let i = 1; i < 100; i++) {
+    const candidate = `${prefix}${i}`;
+    if (!names.has(candidate)) return candidate;
+  }
+  return `${prefix}${Date.now()}`;
+}
+
+function drawSegment(api: any, a: string, b: string): boolean {
+  return [`Segment(${a},${b})`, `Segment[${a},${b}]`].some((cmd) => runGeoGebraEval(api, cmd, true));
+}
+
+function drawClosedSegments(api: any, points: string[], close = true): boolean {
+  if (points.length < 2) return false;
+  let ok = 0;
+  const limit = close ? points.length : points.length - 1;
+  for (let i = 0; i < limit; i++) {
+    if (drawSegment(api, points[i], points[(i + 1) % points.length])) ok += 1;
+  }
+  return ok >= Math.max(1, limit - 1);
+}
+
+function createPoint(api: any, x: number, y: number, prefix = "P") {
+  const label = nextAvailableLabel(api, prefix);
+  const created = runGeoGebraEval(api, `${label}=(${roundCoord(x)},${roundCoord(y)})`);
+  return created ? label : null;
+}
+
+function drawRegularPolygonFallback(api: any, first: string, second: string, sides: number): boolean {
+  const a = getPoint2D(api, first);
+  const b = getPoint2D(api, second);
+  if (!a || !b || sides < 3 || sides > 24) return false;
+  const vx = b.x - a.x;
+  const vy = b.y - a.y;
+  if (Math.hypot(vx, vy) < 1e-9) return false;
+  const angle = (2 * Math.PI) / sides;
+  const vertices = [first, second];
+  let cx = b.x;
+  let cy = b.y;
+  for (let i = 1; i < sides - 1; i++) {
+    const dx = vx * Math.cos(angle * i) - vy * Math.sin(angle * i);
+    const dy = vx * Math.sin(angle * i) + vy * Math.cos(angle * i);
+    cx += dx;
+    cy += dy;
+    const label = createPoint(api, cx, cy, "V");
+    if (!label) return false;
+    vertices.push(label);
+  }
+  return drawClosedSegments(api, vertices, true);
+}
+
+function regularSidesFromText(text: string): number | null {
+  const lower = text.toLowerCase();
+  const explicit = lower.match(/(\d+)\s*(?:côtés|cotes|sommets)/);
+  if (explicit) return Math.max(3, Math.min(24, Number(explicit[1])));
+  if (/triangle|trianfle/.test(lower)) return 3;
+  if (/carr[ée]|quadrilat[eè]re r[ée]gulier|quadrilat[eè]re regulier/.test(lower)) return 4;
+  if (/pentagone/.test(lower)) return 5;
+  if (/hexagone/.test(lower)) return 6;
+  if (/heptagone/.test(lower)) return 7;
+  if (/octogone/.test(lower)) return 8;
+  return null;
+}
+
+function pointLabels(api: any): string[] {
+  return getObjectNames(api)
+    .filter((name) => {
+      try { return api.getObjectType(name) === "point" && getPoint2D(api, name); } catch { return false; }
+    })
+    .sort((a, b) => a.localeCompare(b, "fr", { numeric: true }));
+}
+
+function ensureFigureFromPoints(api: any, title: string | undefined, code: string) {
+  const text = `${title || ""} ${code}`.toLowerCase();
+  const labels = pointLabels(api);
+  if (labels.length < 2) return;
+
+  const asksClosedShape = /losange|parall[ée]logramme|par[ée]lograme|parelograme|carr[ée]|rectangle|triangle|trianfle|quadrilat[eè]re|polygone/.test(text);
+  const sides = regularSidesFromText(text);
+
+  if (/polygone r[ée]gulier|polygone regulier|triangle [ée]quilat[ée]ral|carr[ée]|pentagone|hexagone|heptagone|octogone/.test(text) && sides && labels.length >= 2) {
+    drawRegularPolygonFallback(api, labels[0], labels[1], sides);
+  }
+
+  if (asksClosedShape && labels.length >= 3) {
+    const vertexCount = /triangle/.test(text) && !/quadrilat[eè]re/.test(text) ? 3 : Math.min(labels.length, sides || 4);
+    drawClosedSegments(api, labels.slice(0, Math.max(3, vertexCount)), true);
+  }
+
+  if (/diagonale/.test(text) && labels.length >= 4) {
+    drawSegment(api, labels[0], labels[2]);
+    drawSegment(api, labels[1], labels[3]);
+  }
+}
+
 function extendCircleFromCommand(api: any, cmd: string, extend: (x: number, y: number) => void): boolean {
   const match = cmd.match(/(?:\w+\s*=\s*)?Circle\s*\((.*)\)\s*$/i);
   if (!match) return false;
@@ -136,55 +267,48 @@ function circleFallbackCommands(api: any, cmd: string): string[] {
 }
 
 function evalGeoGebraCommand(api: any, cmd: string): boolean {
-  try {
-    const result = api.evalCommand(cmd);
-    if (result !== false) return true;
-  } catch {}
+  const expectObject = commandCreatesObject(cmd);
+  if (runGeoGebraEval(api, cmd, expectObject)) return true;
 
   const normalized = cmd.replace(/^(\w+)\s*=\s*/, "$1: ");
   if (normalized !== cmd) {
-    try {
-      const result = api.evalCommand(normalized);
-      if (result !== false) return true;
-    } catch {}
+    if (runGeoGebraEval(api, normalized, expectObject)) return true;
   }
 
   for (const fallback of circleFallbackCommands(api, cmd)) {
-    try {
-      const result = api.evalCommand(fallback);
-      if (result !== false) return true;
-    } catch {}
+    if (runGeoGebraEval(api, fallback, commandCreatesObject(fallback))) return true;
   }
 
-  // Polygon fallback : si Polygon(A,B,C,...) échoue mais que les points existent,
-  // tracer des segments entre les sommets consécutifs (et fermer la figure).
   const polyMatch = cmd.match(/(?:\w+\s*=\s*)?Polygon\s*\((.*)\)\s*$/i);
   if (polyMatch) {
     const args = splitArgs(polyMatch[1]);
     const pointArgs = args.filter((a) => /^[A-Za-z]\w*$/.test(a));
+    const sides = args.length === 3 ? getNumericValue(api, args[2]) : null;
+    if (args.length === 3 && pointArgs.length >= 2 && sides && Number.isInteger(sides)) {
+      if (drawRegularPolygonFallback(api, args[0], args[1], sides)) return true;
+    }
     if (pointArgs.length >= 3) {
       const defined = pointArgs.filter((p) => {
         try { return getPoint2D(api, p) !== null; } catch { return false; }
       });
       if (defined.length >= 3) {
-        let ok = false;
-        for (let i = 0; i < defined.length; i++) {
-          const a = defined[i], b = defined[(i + 1) % defined.length];
-          try {
-            const r = api.evalCommand(`Segment(${a},${b})`);
-            if (r !== false) ok = true;
-          } catch {}
-        }
-        if (ok) return true;
+        if (drawClosedSegments(api, defined, true)) return true;
       }
-      // Sinon : tenter un polygone régulier basé sur les 2 premiers points (n côtés)
       if (pointArgs.length === args.length) {
-        try {
-          const r = api.evalCommand(`Polygon(${args[0]},${args[1]},${args.length})`);
-          if (r !== false) return true;
-        } catch {}
+        if (runGeoGebraEval(api, `Polygon(${args[0]},${args[1]},${args.length})`, true)) return true;
+        if (drawRegularPolygonFallback(api, args[0], args[1], args.length)) return true;
       }
     }
+  }
+
+  const regularSides = regularSidesFromText(cmd);
+  const segmentLike = cmd.match(/(?:\w+\s*=\s*)?(?:Segment|Line|Ray)\s*\(([^,]+),([^)]+)\)\s*$/i);
+  if (segmentLike && drawSegment(api, segmentLike[1].trim(), segmentLike[2].trim())) return true;
+  if (regularSides) {
+    const pts = getObjectNames(api).filter((name) => {
+      try { return api.getObjectType(name) === "point"; } catch { return false; }
+    });
+    if (pts.length >= 2 && drawRegularPolygonFallback(api, pts[0], pts[1], regularSides)) return true;
   }
 
   console.warn("GeoGebra command failed:", cmd);
@@ -286,6 +410,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           for (const cmd of commands) {
             evalGeoGebraCommand(api, cmd);
           }
+          ensureFigureFromPoints(api, data.title, data.code);
           // Style every constructed object + compute fit window from points
           let xs: number[] = [];
           let ys: number[] = [];
@@ -333,7 +458,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                       const eq: string = api.getValueString(name) || "";
                       const norm = eq.replace(/^[^:]+:/, "").replace(/²/g, "^2").replace(/\s+/g, "");
                       // (x-a)^2+(y-b)^2=r^2
-                      let m = norm.match(/\(x([+\-][\d.]+)\)\^2\+\(y([+\-][\d.]+)\)\^2=([\d.]+)/);
+                      let m = norm.match(/\(x([+-][\d.]+)\)\^2\+\(y([+-][\d.]+)\)\^2=([\d.]+)/);
                       if (m) {
                         const a = -parseFloat(m[1]);
                         const b = -parseFloat(m[2]);
