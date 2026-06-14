@@ -311,6 +311,16 @@ function circleFallbackCommands(api: any, cmd: string): string[] {
 }
 
 function evalGeoGebraCommand(api: any, cmd: string): boolean {
+  cmd = normalizeGeoGebraCommand(cmd);
+  const assignmentPoint = cmd.match(/^([A-Za-z]\w*)\s*=\s*(\(.+\))$/);
+  if (assignmentPoint) {
+    const coords = parseCoordText(assignmentPoint[2]);
+    if (coords) {
+      const robust = `${assignmentPoint[1]}=(${roundCoord(coords.x)},${roundCoord(coords.y)})`;
+      if (runGeoGebraEval(api, robust)) return true;
+    }
+  }
+
   const expectObject = commandCreatesObject(cmd);
   if (runGeoGebraEval(api, cmd, expectObject)) return true;
 
