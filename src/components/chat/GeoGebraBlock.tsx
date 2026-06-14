@@ -236,59 +236,56 @@ function circleFallbackCommands(api: any, cmd: string): string[] {
 }
 
 function evalGeoGebraCommand(api: any, cmd: string): boolean {
-  try {
-    const result = api.evalCommand(cmd);
-    if (result !== false) return true;
-  } catch {}
+  const expectObject = commandCreatesObject(cmd);
+  if (runGeoGebraEval(api, cmd, expectObject)) return true;
 
   const normalized = cmd.replace(/^(\w+)\s*=\s*/, "$1: ");
   if (normalized !== cmd) {
-    try {
-      const result = api.evalCommand(normalized);
-      if (result !== false) return true;
-    } catch {}
+    if (runGeoGebraEval(api, normalized, expectObject)) return true;
   }
 
   for (const fallback of circleFallbackCommands(api, cmd)) {
-    try {
-      const result = api.evalCommand(fallback);
-      if (result !== false) return true;
-    } catch {}
+    if (runGeoGebraEval(api, fallback, commandCreatesObject(fallback))) return true;
   }
 
-  // Polygon fallback : si Polygon(A,B,C,...) échoue mais que les points existent,
-  // tracer des segments entre les sommets consécutifs (et fermer la figure).
   const polyMatch = cmd.match(/(?:\w+\s*=\s*)?Polygon\s*\((.*)\)\s*$/i);
   if (polyMatch) {
     const args = splitArgs(polyMatch[1]);
     const pointArgs = args.filter((a) => /^[A-Za-z]\w*$/.test(a));
+    const sides = args.length === 3 ? getNumericValue(api, args[2]) : null;
+    if (args.length === 3 && pointArgs.length >= 2 && sides && Number.isInteger(sides)) {
+      if (drawRegularPolygonFallback(api, args[0], args[1], sides)) return true;
+    }
     if (pointArgs.length >= 3) {
       const defined = pointArgs.filter((p) => {
         try { return getPoint2D(api, p) !== null; } catch { return false; }
       });
       if (defined.length >= 3) {
-        let ok = false;
-        for (let i = 0; i < defined.length; i++) {
-          const a = defined[i], b = defined[(i + 1) % defined.length];
-          try {
-            const r = api.evalCommand(`Segment(${a},${b})`);
-            if (r !== false) ok = true;
-          } catch {}
-        }
-        if (ok) return true;
+        if (drawClosedSegments(api, defined, true)) return true;
       }
-      // Sinon : tenter un polygone régulier basé sur les 2 premiers points (n côtés)
       if (pointArgs.length === args.length) {
-        try {
-          const r = api.evalCommand(`Polygon(${args[0]},${args[1]},${args.length})`);
-          if (r !== false) return true;
-        } catch {}
+        if (runGeoGebraEval(api, `Polygon(${args[0]},${args[1]},${args.length})`, true)) return true;
+        if (drawRegularPolygonFallback(api, args[0], args[1], args.length)) return true;
       }
     }
   }
 
+  const regularSides = regularSidesFromText(`${dataTitleFromCommand(cmd)} ${cmd}`);
+  const segmentLike = cmd.match(/(?:\w+\s*=\s*)?(?:Segment|Line|Ray)\s*\(([^,]+),([^\)]+)\)\s*$/i);
+  if (segmentLike && drawSegment(api, segmentLike[1].trim(), segmentLike[2].trim())) return true;
+  if (regularSides) {
+    const pts = getObjectNames(api).filter((name) => {
+      try { return api.getObjectType(name) === "point"; } catch { return false; }
+    });
+    if (pts.length >= 2 && drawRegularPolygonFallback(api, pts[0], pts[1], regularSides)) return true;
+  }
+
   console.warn("GeoGebra command failed:", cmd);
   return false;
+}
+
+function dataTitleFromCommand(_cmd: string) {
+  return "";
 }
 
 function keepOrthonormalScale(x1: number, x2: number, y1: number, y2: number, width: number, height: number) {
