@@ -42,6 +42,15 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 - Polygone : Polygon(A,B,C,D)  · Polygone régulier : Polygon(A,B,n)
 - ⚠️ TRIANGLE ÉQUILATÉRAL / CARRÉ / PENTAGONE / HEXAGONE à partir de DEUX points : utilise OBLIGATOIREMENT \`Polygon(A,B,n)\` (n = nombre de côtés). N'écris JAMAIS \`Polygon(A,B,C)\` sans avoir défini le point C avant.
 - Si tu nommes des sommets non donnés, définis-les explicitement AVANT le Polygon (ex: \`C=(2, 3.464); Polygon(A,B,C)\`).
+- ⚠️ Pour une figure fermée, ajoute TOUJOURS les côtés explicitement avec \`Segment\` après les points : \`Segment(A,B); Segment(B,C); Segment(C,D); Segment(D,A)\`. Ne laisse jamais seulement des points isolés.
+- Losange avec diagonales : \`A=(0,2); B=(3,0); C=(6,2); D=(3,4); Segment(A,B); Segment(B,C); Segment(C,D); Segment(D,A); Segment(A,C); Segment(B,D)\`.
+- Carré : \`A=(0,0); B=(4,0); C=(4,4); D=(0,4); Segment(A,B); Segment(B,C); Segment(C,D); Segment(D,A)\` ou \`A=(0,0); B=(4,0); Polygon(A,B,4)\`.
+- Triangle : \`A=(0,0); B=(5,0); C=(2.5,4); Segment(A,B); Segment(B,C); Segment(C,A)\`.
+- Parallélogramme : \`A=(0,0); B=(5,0); C=(7,3); D=(2,3); Segment(A,B); Segment(B,C); Segment(C,D); Segment(D,A)\`.
+- Polygone régulier : définis deux points puis \`Polygon(A,B,n)\` ET si besoin ajoute les segments visibles entre sommets explicites quand tu les connais.
+- Fractale simple (ex: triangle de Sierpinski niveau 2) : définis plusieurs petits triangles avec points et segments explicites, pas de récursion ni de script.
+- Patron de cône de révolution : reste en \`"dim":"2d"\`; dessine un cercle de base et un secteur circulaire avec centre, rayons, arc/segments explicites. Exemple robuste : \`O=(0,0); A=(1,0); Circle(O,1); S=(4,0); U=(2.5,2.6); V=(2.5,-2.6); Segment(S,U); Segment(S,V); CircularArc(S,U,V)\`.
+- Patron de pavé droit : reste en \`"dim":"2d"\`; dessine 6 rectangles reliés en croix avec tous les segments explicitement.
 - Cercle : Circle(A,2), Circle(A,B), Circle(A,B,C)
 - Conique : Ellipse(F1,F2,a), Parabola(F,d), Hyperbola(F1,F2,a)
 - Fonction : f(x)=x^2, g(x)=sin(x), h(x)=exp(x), k(x)=log(x), abs(x), sqrt(x)
