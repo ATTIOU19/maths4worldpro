@@ -75,6 +75,106 @@ function circumcircle(points: { x: number; y: number }[]) {
   return { x: ux, y: uy, r };
 }
 
+function getObjectNames(api: any): string[] {
+  try {
+    return api.getAllObjectNames?.() || [];
+  } catch {
+    return [];
+  }
+}
+
+function commandCreatesObject(cmd: string): boolean {
+  return /\b(Polygon|Segment|Line|Ray|Circle|Ellipse|Parabola|Hyperbola|Vector|Polyline|PolyLine|CircularArc|Arc|Sector|Semicircle|Cube|Prism|Pyramid|Cone|Cylinder|Sphere|Plane|Surface)\s*[\(\[]/i.test(cmd);
+}
+
+function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
+  const before = expectObject ? new Set(getObjectNames(api)) : null;
+  try {
+    const result = api.evalCommand(cmd);
+    if (result === false) return false;
+  } catch {
+    return false;
+  }
+  if (!expectObject || !before) return true;
+  const after = getObjectNames(api);
+  if (after.some((name) => !before.has(name))) return true;
+  try {
+    const labels = api.evalCommandGetLabels?.(cmd);
+    return Boolean(labels && String(labels).trim());
+  } catch {
+    return false;
+  }
+}
+
+function roundCoord(n: number) {
+  return Number(n.toFixed(6));
+}
+
+function nextAvailableLabel(api: any, prefix: string) {
+  const names = new Set(getObjectNames(api));
+  for (let i = 1; i < 100; i++) {
+    const candidate = `${prefix}${i}`;
+    if (!names.has(candidate)) return candidate;
+  }
+  return `${prefix}${Date.now()}`;
+}
+
+function drawSegment(api: any, a: string, b: string): boolean {
+  return [`Segment(${a},${b})`, `Segment[${a},${b}]`].some((cmd) => runGeoGebraEval(api, cmd, true));
+}
+
+function drawClosedSegments(api: any, points: string[], close = true): boolean {
+  if (points.length < 2) return false;
+  let ok = 0;
+  const limit = close ? points.length : points.length - 1;
+  for (let i = 0; i < limit; i++) {
+    if (drawSegment(api, points[i], points[(i + 1) % points.length])) ok += 1;
+  }
+  return ok >= Math.max(1, limit - 1);
+}
+
+function createPoint(api: any, x: number, y: number, prefix = "P") {
+  const label = nextAvailableLabel(api, prefix);
+  const created = runGeoGebraEval(api, `${label}=(${roundCoord(x)},${roundCoord(y)})`);
+  return created ? label : null;
+}
+
+function drawRegularPolygonFallback(api: any, first: string, second: string, sides: number): boolean {
+  const a = getPoint2D(api, first);
+  const b = getPoint2D(api, second);
+  if (!a || !b || sides < 3 || sides > 24) return false;
+  const vx = b.x - a.x;
+  const vy = b.y - a.y;
+  if (Math.hypot(vx, vy) < 1e-9) return false;
+  const angle = (2 * Math.PI) / sides;
+  const vertices = [first, second];
+  let cx = b.x;
+  let cy = b.y;
+  for (let i = 1; i < sides - 1; i++) {
+    const dx = vx * Math.cos(angle * i) - vy * Math.sin(angle * i);
+    const dy = vx * Math.sin(angle * i) + vy * Math.cos(angle * i);
+    cx += dx;
+    cy += dy;
+    const label = createPoint(api, cx, cy, "V");
+    if (!label) return false;
+    vertices.push(label);
+  }
+  return drawClosedSegments(api, vertices, true);
+}
+
+function regularSidesFromText(text: string): number | null {
+  const lower = text.toLowerCase();
+  const explicit = lower.match(/(\d+)\s*(?:côtés|cotes|sommets)/);
+  if (explicit) return Math.max(3, Math.min(24, Number(explicit[1])));
+  if (/triangle/.test(lower)) return 3;
+  if (/carr[ée]|quadrilat[eè]re r[ée]gulier/.test(lower)) return 4;
+  if (/pentagone/.test(lower)) return 5;
+  if (/hexagone/.test(lower)) return 6;
+  if (/heptagone/.test(lower)) return 7;
+  if (/octogone/.test(lower)) return 8;
+  return null;
+}
+
 function extendCircleFromCommand(api: any, cmd: string, extend: (x: number, y: number) => void): boolean {
   const match = cmd.match(/(?:\w+\s*=\s*)?Circle\s*\((.*)\)\s*$/i);
   if (!match) return false;
