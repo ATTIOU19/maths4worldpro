@@ -84,7 +84,7 @@ function getObjectNames(api: any): string[] {
 }
 
 function commandCreatesObject(cmd: string): boolean {
-  return /\b(Polygon|Segment|Line|Ray|Circle|Ellipse|Parabola|Hyperbola|Vector|Polyline|PolyLine|CircularArc|Arc|Sector|Semicircle|Cube|Prism|Pyramid|Cone|Cylinder|Sphere|Plane|Surface)\s*[\(\[]/i.test(cmd);
+  return /\b(Polygon|Segment|Line|Ray|Circle|Ellipse|Parabola|Hyperbola|Vector|Polyline|PolyLine|CircularArc|Arc|Sector|Semicircle|Cube|Prism|Pyramid|Cone|Cylinder|Sphere|Plane|Surface)\s*[(\[]/i.test(cmd);
 }
 
 function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
@@ -301,8 +301,8 @@ function evalGeoGebraCommand(api: any, cmd: string): boolean {
     }
   }
 
-  const regularSides = regularSidesFromText(`${dataTitleFromCommand(cmd)} ${cmd}`);
-  const segmentLike = cmd.match(/(?:\w+\s*=\s*)?(?:Segment|Line|Ray)\s*\(([^,]+),([^\)]+)\)\s*$/i);
+  const regularSides = regularSidesFromText(cmd);
+  const segmentLike = cmd.match(/(?:\w+\s*=\s*)?(?:Segment|Line|Ray)\s*\(([^,]+),([^)]+)\)\s*$/i);
   if (segmentLike && drawSegment(api, segmentLike[1].trim(), segmentLike[2].trim())) return true;
   if (regularSides) {
     const pts = getObjectNames(api).filter((name) => {
@@ -313,10 +313,6 @@ function evalGeoGebraCommand(api: any, cmd: string): boolean {
 
   console.warn("GeoGebra command failed:", cmd);
   return false;
-}
-
-function dataTitleFromCommand(_cmd: string) {
-  return "";
 }
 
 function keepOrthonormalScale(x1: number, x2: number, y1: number, y2: number, width: number, height: number) {
