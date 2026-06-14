@@ -175,6 +175,37 @@ function regularSidesFromText(text: string): number | null {
   return null;
 }
 
+function pointLabels(api: any): string[] {
+  return getObjectNames(api)
+    .filter((name) => {
+      try { return api.getObjectType(name) === "point" && getPoint2D(api, name); } catch { return false; }
+    })
+    .sort((a, b) => a.localeCompare(b, "fr", { numeric: true }));
+}
+
+function ensureFigureFromPoints(api: any, title: string | undefined, code: string) {
+  const text = `${title || ""} ${code}`.toLowerCase();
+  const labels = pointLabels(api);
+  if (labels.length < 2) return;
+
+  const asksClosedShape = /losange|parall[ée]logramme|carr[ée]|rectangle|triangle|quadrilat[eè]re|polygone/.test(text);
+  const sides = regularSidesFromText(text);
+
+  if (/polygone r[ée]gulier|triangle [ée]quilat[ée]ral|carr[ée]|pentagone|hexagone|heptagone|octogone/.test(text) && sides && labels.length >= 2) {
+    drawRegularPolygonFallback(api, labels[0], labels[1], sides);
+  }
+
+  if (asksClosedShape && labels.length >= 3) {
+    const vertexCount = /triangle/.test(text) && !/quadrilat[eè]re/.test(text) ? 3 : Math.min(labels.length, sides || 4);
+    drawClosedSegments(api, labels.slice(0, Math.max(3, vertexCount)), true);
+  }
+
+  if (/diagonale/.test(text) && labels.length >= 4) {
+    drawSegment(api, labels[0], labels[2]);
+    drawSegment(api, labels[1], labels[3]);
+  }
+}
+
 function extendCircleFromCommand(api: any, cmd: string, extend: (x: number, y: number) => void): boolean {
   const match = cmd.match(/(?:\w+\s*=\s*)?Circle\s*\((.*)\)\s*$/i);
   if (!match) return false;
