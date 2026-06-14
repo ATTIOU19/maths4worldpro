@@ -84,7 +84,7 @@ function getObjectNames(api: any): string[] {
 }
 
 function commandCreatesObject(cmd: string): boolean {
-  return /\b(Polygon|Segment|Line|Ray|Circle|Ellipse|Parabola|Hyperbola|Vector|Polyline|PolyLine|CircularArc|Arc|Sector|Semicircle|Cube|Prism|Pyramid|Cone|Cylinder|Sphere|Plane|Surface)\s*[(\[]/i.test(cmd);
+  return /\b(Polygon|Segment|Line|Ray|Circle|Ellipse|Parabola|Hyperbola|Vector|Polyline|PolyLine|CircularArc|Arc|Sector|Semicircle|Cube|Prism|Pyramid|Cone|Cylinder|Sphere|Plane|Surface)\s*(?:\(|\[)/i.test(cmd);
 }
 
 function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
