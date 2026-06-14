@@ -166,8 +166,8 @@ function regularSidesFromText(text: string): number | null {
   const lower = text.toLowerCase();
   const explicit = lower.match(/(\d+)\s*(?:côtés|cotes|sommets)/);
   if (explicit) return Math.max(3, Math.min(24, Number(explicit[1])));
-  if (/triangle/.test(lower)) return 3;
-  if (/carr[ée]|quadrilat[eè]re r[ée]gulier/.test(lower)) return 4;
+  if (/triangle|trianfle/.test(lower)) return 3;
+  if (/carr[ée]|quadrilat[eè]re r[ée]gulier|quadrilat[eè]re regulier/.test(lower)) return 4;
   if (/pentagone/.test(lower)) return 5;
   if (/hexagone/.test(lower)) return 6;
   if (/heptagone/.test(lower)) return 7;
@@ -188,10 +188,10 @@ function ensureFigureFromPoints(api: any, title: string | undefined, code: strin
   const labels = pointLabels(api);
   if (labels.length < 2) return;
 
-  const asksClosedShape = /losange|parall[ée]logramme|carr[ée]|rectangle|triangle|quadrilat[eè]re|polygone/.test(text);
+  const asksClosedShape = /losange|parall[ée]logramme|par[ée]lograme|parelograme|carr[ée]|rectangle|triangle|trianfle|quadrilat[eè]re|polygone/.test(text);
   const sides = regularSidesFromText(text);
 
-  if (/polygone r[ée]gulier|triangle [ée]quilat[ée]ral|carr[ée]|pentagone|hexagone|heptagone|octogone/.test(text) && sides && labels.length >= 2) {
+  if (/polygone r[ée]gulier|polygone regulier|triangle [ée]quilat[ée]ral|carr[ée]|pentagone|hexagone|heptagone|octogone/.test(text) && sides && labels.length >= 2) {
     drawRegularPolygonFallback(api, labels[0], labels[1], sides);
   }
 
