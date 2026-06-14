@@ -42,7 +42,33 @@ function splitArgs(args: string): string[] {
   return result;
 }
 
+const NUM = "[+-]?\\d+(?:\\.\\d+)?";
+
+function parseCoordText(text: string): { x: number; y: number } | null {
+  const cleaned = text
+    .replace(/\s+/g, "")
+    .replace(/[{}]/g, "")
+    .replace(/^=+/, "")
+    .replace(/^\(+/, "")
+    .replace(/\)+$/, "");
+  const match = cleaned.match(new RegExp(`^(${NUM}),(${NUM})(?:,${NUM})?$`));
+  return match ? { x: parseFloat(match[1]), y: parseFloat(match[2]) } : null;
+}
+
+function normalizeGeoGebraCommand(cmd: string): string {
+  let normalized = cmd.trim();
+  normalized = normalized.replace(new RegExp(`\\(\\s*\\{\\s*(${NUM})\\s*,\\s*(${NUM})\\s*\\}\\s*\\)`, "g"), "($1,$2)");
+  normalized = normalized.replace(new RegExp(`\\{\\s*(${NUM})\\s*,\\s*(${NUM})\\s*\\}`, "g"), "($1,$2)");
+  const point2d = normalized.match(new RegExp(`^(\\w+)\\s*=\\s*[({]+\\s*(${NUM})\\s*,\\s*(${NUM})\\s*[)}]+$`));
+  if (point2d) return `${point2d[1]}=(${point2d[2]},${point2d[3]})`;
+  const point3d = normalized.match(new RegExp(`^(\\w+)\\s*=\\s*[({]+\\s*(${NUM})\\s*,\\s*(${NUM})\\s*,\\s*(${NUM})\\s*[)}]+$`));
+  if (point3d) return `${point3d[1]}=(${point3d[2]},${point3d[3]},${point3d[4]})`;
+  return normalized;
+}
+
 function getPoint2D(api: any, value: string): { x: number; y: number } | null {
+  const fromText = parseCoordText(value);
+  if (fromText) return fromText;
   const direct = value.match(/^\(?\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*\)?$/);
   if (direct) return { x: parseFloat(direct[1]), y: parseFloat(direct[2]) };
   try {
@@ -50,7 +76,12 @@ function getPoint2D(api: any, value: string): { x: number; y: number } | null {
     const y = api.getYcoord(value);
     return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
   } catch {
-    return null;
+    try {
+      const valueString = api.getValueString?.(value) || api.getDefinitionString?.(value) || "";
+      return parseCoordText(String(valueString).replace(/^[^=]+=/, ""));
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -88,9 +119,10 @@ function commandCreatesObject(cmd: string): boolean {
 }
 
 function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
+  const normalizedCmd = normalizeGeoGebraCommand(cmd);
   const before = expectObject ? new Set(getObjectNames(api)) : null;
   try {
-    const result = api.evalCommand(cmd);
+    const result = api.evalCommand(normalizedCmd);
     if (result === false) return false;
   } catch {
     return false;
@@ -99,7 +131,7 @@ function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
   const after = getObjectNames(api);
   if (after.some((name) => !before.has(name))) return true;
   try {
-    const labels = api.evalCommandGetLabels?.(cmd);
+    const labels = api.evalCommandGetLabels?.(normalizedCmd);
     return Boolean(labels && String(labels).trim());
   } catch {
     return false;
@@ -120,7 +152,19 @@ function nextAvailableLabel(api: any, prefix: string) {
 }
 
 function drawSegment(api: any, a: string, b: string): boolean {
-  return [`Segment(${a},${b})`, `Segment[${a},${b}]`].some((cmd) => runGeoGebraEval(api, cmd, true));
+  const pa = getPoint2D(api, a);
+  const pb = getPoint2D(api, b);
+  if (!pa || !pb) return false;
+  const labelA = /^[A-Za-z]\w*$/.test(a.trim()) ? a.trim() : createPoint(api, pa.x, pa.y, "S");
+  const labelB = /^[A-Za-z]\w*$/.test(b.trim()) ? b.trim() : createPoint(api, pb.x, pb.y, "S");
+  if (!labelA || !labelB) return false;
+  const lineName = nextAvailableLabel(api, "seg");
+  return [
+    `${lineName}=Segment(${labelA},${labelB})`,
+    `Segment(${labelA},${labelB})`,
+    `Segment[${labelA},${labelB}]`,
+    `${lineName}: (${pa.y - pb.y})x + (${pb.x - pa.x})y = ${(pa.y - pb.y) * pa.x + (pb.x - pa.x) * pa.y}`,
+  ].some((cmd) => runGeoGebraEval(api, cmd, true));
 }
 
 function drawClosedSegments(api: any, points: string[], close = true): boolean {
@@ -183,9 +227,20 @@ function pointLabels(api: any): string[] {
     .sort((a, b) => a.localeCompare(b, "fr", { numeric: true }));
 }
 
+function labelsFromAssignments(code: string): string[] {
+  return splitCommands(code)
+    .map((cmd) => normalizeGeoGebraCommand(cmd).match(/^([A-Za-z]\w*)\s*=\s*\(/)?.[1])
+    .filter((label): label is string => Boolean(label));
+}
+
 function ensureFigureFromPoints(api: any, title: string | undefined, code: string) {
   const text = `${title || ""} ${code}`.toLowerCase();
-  const labels = pointLabels(api);
+  const seen = new Set<string>();
+  const labels = [...labelsFromAssignments(code), ...pointLabels(api)].filter((label) => {
+    if (seen.has(label) || !getPoint2D(api, label)) return false;
+    seen.add(label);
+    return true;
+  });
   if (labels.length < 2) return;
 
   const asksClosedShape = /losange|parall[ée]logramme|par[ée]lograme|parelograme|carr[ée]|rectangle|triangle|trianfle|quadrilat[eè]re|polygone/.test(text);
@@ -267,6 +322,16 @@ function circleFallbackCommands(api: any, cmd: string): string[] {
 }
 
 function evalGeoGebraCommand(api: any, cmd: string): boolean {
+  cmd = normalizeGeoGebraCommand(cmd);
+  const assignmentPoint = cmd.match(/^([A-Za-z]\w*)\s*=\s*(\(.+\))$/);
+  if (assignmentPoint) {
+    const coords = parseCoordText(assignmentPoint[2]);
+    if (coords) {
+      const robust = `${assignmentPoint[1]}=(${roundCoord(coords.x)},${roundCoord(coords.y)})`;
+      if (runGeoGebraEval(api, robust)) return true;
+    }
+  }
+
   const expectObject = commandCreatesObject(cmd);
   if (runGeoGebraEval(api, cmd, expectObject)) return true;
 

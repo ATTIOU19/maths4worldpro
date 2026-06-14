@@ -37,6 +37,7 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 
 **Syntaxe GeoGebra — Plan (2D) :**
 - Point : A=(0,0)
+- ⚠️ Écris les points EXACTEMENT sous la forme \`A=(0,0)\`. Interdit : \`V1={{4,4}}\`, \`V2==((0,4))\`, accolades \`{ }\`, double égal \`==\`, ou noms de sommets \`V1\` si tu peux utiliser \`A,B,C,D\`.
 - Segment / Droite : Segment(A,B), Line(A,B), Ray(A,B)
 - Vecteur : Vector(A,B) ou u=(2,1)
 - Polygone : Polygon(A,B,C,D)  · Polygone régulier : Polygon(A,B,n)
