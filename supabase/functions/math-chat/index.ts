@@ -50,7 +50,7 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 - Polygone régulier : définis deux points puis \`Polygon(A,B,n)\` ET si besoin ajoute les segments visibles entre sommets explicites quand tu les connais.
 - Fractale simple (ex: triangle de Sierpinski niveau 2) : définis plusieurs petits triangles avec points et segments explicites, pas de récursion ni de script.
 - Patron de cône de révolution : reste en \`"dim":"2d"\`; dessine un cercle de base et un secteur circulaire avec centre, rayons, arc/segments explicites. Exemple robuste : \`O=(0,0); A=(1,0); Circle(O,1); S=(4,0); U=(2.5,2.6); V=(2.5,-2.6); Segment(S,U); Segment(S,V); CircularArc(S,U,V)\`.
-- Patron de pavé droit : reste en \`"dim":"2d"\`; dessine 6 rectangles reliés en croix avec tous les segments explicitement.
+- Patron de pavé droit : reste en \`"dim":"2d"\`; dessine 6 rectangles reliés en croix avec tous les segments explicitement. Exemple robuste : \`A=(0,0); B=(3,0); C=(3,2); D=(0,2); E=(3,0); F=(6,0); G=(6,2); H=(3,2); I=(6,0); J=(9,0); K=(9,2); L=(6,2); M=(-3,0); N=(0,0); P=(0,2); Q=(-3,2); R=(0,2); T=(3,2); U=(3,4); V=(0,4); W=(0,-2); X=(3,-2); Y=(3,0); Z=(0,0); Segment(A,B); Segment(B,C); Segment(C,D); Segment(D,A); Segment(E,F); Segment(F,G); Segment(G,H); Segment(H,E); Segment(I,J); Segment(J,K); Segment(K,L); Segment(L,I); Segment(M,N); Segment(N,P); Segment(P,Q); Segment(Q,M); Segment(R,T); Segment(T,U); Segment(U,V); Segment(V,R); Segment(W,X); Segment(X,Y); Segment(Y,Z); Segment(Z,W)\`.
 - Cercle : Circle(A,2), Circle(A,B), Circle(A,B,C)
 - Conique : Ellipse(F1,F2,a), Parabola(F,d), Hyperbola(F1,F2,a)
 - Fonction : f(x)=x^2, g(x)=sin(x), h(x)=exp(x), k(x)=log(x), abs(x), sqrt(x)
