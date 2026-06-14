@@ -458,7 +458,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                       const eq: string = api.getValueString(name) || "";
                       const norm = eq.replace(/^[^:]+:/, "").replace(/²/g, "^2").replace(/\s+/g, "");
                       // (x-a)^2+(y-b)^2=r^2
-                      let m = norm.match(/\(x([+\-][\d.]+)\)\^2\+\(y([+\-][\d.]+)\)\^2=([\d.]+)/);
+                      let m = norm.match(/\(x([+-][\d.]+)\)\^2\+\(y([+-][\d.]+)\)\^2=([\d.]+)/);
                       if (m) {
                         const a = -parseFloat(m[1]);
                         const b = -parseFloat(m[2]);
