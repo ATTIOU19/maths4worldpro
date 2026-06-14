@@ -414,6 +414,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
           for (const cmd of commands) {
             evalGeoGebraCommand(api, cmd);
           }
+          ensureFigureFromPoints(api, data.title, data.code);
           // Style every constructed object + compute fit window from points
           let xs: number[] = [];
           let ys: number[] = [];
