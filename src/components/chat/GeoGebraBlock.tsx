@@ -227,9 +227,20 @@ function pointLabels(api: any): string[] {
     .sort((a, b) => a.localeCompare(b, "fr", { numeric: true }));
 }
 
+function labelsFromAssignments(code: string): string[] {
+  return splitCommands(code)
+    .map((cmd) => normalizeGeoGebraCommand(cmd).match(/^([A-Za-z]\w*)\s*=\s*\(/)?.[1])
+    .filter((label): label is string => Boolean(label));
+}
+
 function ensureFigureFromPoints(api: any, title: string | undefined, code: string) {
   const text = `${title || ""} ${code}`.toLowerCase();
-  const labels = pointLabels(api);
+  const seen = new Set<string>();
+  const labels = [...labelsFromAssignments(code), ...pointLabels(api)].filter((label) => {
+    if (seen.has(label) || !getPoint2D(api, label)) return false;
+    seen.add(label);
+    return true;
+  });
   if (labels.length < 2) return;
 
   const asksClosedShape = /losange|parall[ée]logramme|par[ée]lograme|parelograme|carr[ée]|rectangle|triangle|trianfle|quadrilat[eè]re|polygone/.test(text);
