@@ -119,9 +119,10 @@ function commandCreatesObject(cmd: string): boolean {
 }
 
 function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
+  const normalizedCmd = normalizeGeoGebraCommand(cmd);
   const before = expectObject ? new Set(getObjectNames(api)) : null;
   try {
-    const result = api.evalCommand(cmd);
+    const result = api.evalCommand(normalizedCmd);
     if (result === false) return false;
   } catch {
     return false;
@@ -130,7 +131,7 @@ function runGeoGebraEval(api: any, cmd: string, expectObject = false): boolean {
   const after = getObjectNames(api);
   if (after.some((name) => !before.has(name))) return true;
   try {
-    const labels = api.evalCommandGetLabels?.(cmd);
+    const labels = api.evalCommandGetLabels?.(normalizedCmd);
     return Boolean(labels && String(labels).trim());
   } catch {
     return false;
@@ -151,7 +152,19 @@ function nextAvailableLabel(api: any, prefix: string) {
 }
 
 function drawSegment(api: any, a: string, b: string): boolean {
-  return [`Segment(${a},${b})`, `Segment[${a},${b}]`].some((cmd) => runGeoGebraEval(api, cmd, true));
+  const pa = getPoint2D(api, a);
+  const pb = getPoint2D(api, b);
+  if (!pa || !pb) return false;
+  const labelA = /^[A-Za-z]\w*$/.test(a.trim()) ? a.trim() : createPoint(api, pa.x, pa.y, "S");
+  const labelB = /^[A-Za-z]\w*$/.test(b.trim()) ? b.trim() : createPoint(api, pb.x, pb.y, "S");
+  if (!labelA || !labelB) return false;
+  const lineName = nextAvailableLabel(api, "seg");
+  return [
+    `${lineName}=Segment(${labelA},${labelB})`,
+    `Segment(${labelA},${labelB})`,
+    `Segment[${labelA},${labelB}]`,
+    `${lineName}: (${pa.y - pb.y})x + (${pb.x - pa.x})y = ${(pa.y - pb.y) * pa.x + (pb.x - pa.x) * pa.y}`,
+  ].some((cmd) => runGeoGebraEval(api, cmd, true));
 }
 
 function drawClosedSegments(api: any, points: string[], close = true): boolean {
