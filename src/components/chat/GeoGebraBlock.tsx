@@ -42,7 +42,33 @@ function splitArgs(args: string): string[] {
   return result;
 }
 
+const NUM = "[+-]?\\d+(?:\\.\\d+)?";
+
+function parseCoordText(text: string): { x: number; y: number } | null {
+  const cleaned = text
+    .replace(/\s+/g, "")
+    .replace(/[{}]/g, "")
+    .replace(/^=+/, "")
+    .replace(/^\(+/, "")
+    .replace(/\)+$/, "");
+  const match = cleaned.match(new RegExp(`^(${NUM}),(${NUM})(?:,${NUM})?$`));
+  return match ? { x: parseFloat(match[1]), y: parseFloat(match[2]) } : null;
+}
+
+function normalizeGeoGebraCommand(cmd: string): string {
+  let normalized = cmd.trim();
+  normalized = normalized.replace(new RegExp(`\\(\\s*\\{\\s*(${NUM})\\s*,\\s*(${NUM})\\s*\\}\\s*\\)`, "g"), "($1,$2)");
+  normalized = normalized.replace(new RegExp(`\\{\\s*(${NUM})\\s*,\\s*(${NUM})\\s*\\}`, "g"), "($1,$2)");
+  const point2d = normalized.match(new RegExp(`^(\\w+)\\s*=\\s*[({]+\\s*(${NUM})\\s*,\\s*(${NUM})\\s*[)}]+$`));
+  if (point2d) return `${point2d[1]}=(${point2d[2]},${point2d[3]})`;
+  const point3d = normalized.match(new RegExp(`^(\\w+)\\s*=\\s*[({]+\\s*(${NUM})\\s*,\\s*(${NUM})\\s*,\\s*(${NUM})\\s*[)}]+$`));
+  if (point3d) return `${point3d[1]}=(${point3d[2]},${point3d[3]},${point3d[4]})`;
+  return normalized;
+}
+
 function getPoint2D(api: any, value: string): { x: number; y: number } | null {
+  const fromText = parseCoordText(value);
+  if (fromText) return fromText;
   const direct = value.match(/^\(?\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*\)?$/);
   if (direct) return { x: parseFloat(direct[1]), y: parseFloat(direct[2]) };
   try {
@@ -50,7 +76,12 @@ function getPoint2D(api: any, value: string): { x: number; y: number } | null {
     const y = api.getYcoord(value);
     return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
   } catch {
-    return null;
+    try {
+      const valueString = api.getValueString?.(value) || api.getDefinitionString?.(value) || "";
+      return parseCoordText(String(valueString).replace(/^[^=]+=/, ""));
+    } catch {
+      return null;
+    }
   }
 }
 
