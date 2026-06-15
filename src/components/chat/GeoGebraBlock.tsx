@@ -517,6 +517,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                   const [r, g, b] = palette[planarIdx++ % palette.length];
                   api.setColor(name, r, g, b);
                   api.setLineThickness(name, 6);
+                  try { api.setLabelVisible(name, false); } catch {}
                   if (type === "conic") {
                     // Try to parse circle equation: x² + y² = r²,  (x - a)² + (y - b)² = r²
                     try {
@@ -546,17 +547,18 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
                   api.setColor(name, r, g, b);
                   api.setLineThickness(name, 5);
                   try { api.setFilling(name, POLY_FILL); } catch {}
+                  try { api.setLabelVisible(name, false); } catch {}
                 } else if (type === "polyhedron" || type === "quadric" || type === "surface" || type === "plane") {
                   const [r, g, b] = palette[solidIdx++ % palette.length];
                   api.setColor(name, r, g, b);
                   const fill = type === "plane" ? PLANE_FILL : SOLID_FILL;
                   try { api.setFilling(name, fill); } catch {}
                   try { api.setLineThickness(name, 4); } catch {}
+                  try { api.setLabelVisible(name, false); } catch {}
                 } else if (type === "point") {
                   api.setColor(name, 42, 110, 187);
                   api.setPointSize(name, 6);
-                  api.setLabelVisible(name, true);
-                  try { api.setLabelStyle(name, 1); } catch {}
+                  try { api.setLabelVisible(name, false); } catch {}
                   try {
                     const x = api.getXcoord(name);
                     const y = api.getYcoord(name);
