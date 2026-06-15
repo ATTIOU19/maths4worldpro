@@ -59,30 +59,6 @@ const APropos = () => {
             </div>
           </div>
 
-          {/* Team */}
-          <motion.div
-            className="bg-card rounded-2xl p-8 shadow-card mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground font-extrabold text-xl">NK</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-card-foreground">Narcisse Kotcholé ATTIOU</h3>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {["Data Scientist", "Ingénieur ML", "Mathématicien"].map((role) => (
-                    <span key={role} className="bg-secondary/10 text-secondary text-xs font-semibold px-3 py-1 rounded-full">
-                      {role}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
           {/* Mission Quote */}
           <motion.div
             className="bg-gradient-hero rounded-2xl p-10 mb-16"
