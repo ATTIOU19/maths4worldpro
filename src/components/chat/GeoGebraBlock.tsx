@@ -1,4 +1,5 @@
 import { useEffect, useRef, useId, useState } from "react";
+import { ZoomableFigure } from "./ZoomableFigure";
 
 declare global {
   interface Window {
@@ -393,16 +394,17 @@ function keepOrthonormalScale(x1: number, x2: number, y1: number, y2: number, wi
   return { x1, x2, y1: cy - half, y2: cy + half };
 }
 
-export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
+export function GeoGebraBlock({ data, fullscreen = false }: { data: GeoGebraData; fullscreen?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const reactId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const idRef = useRef(`ggb-${reactId}`);
   const [loading, setLoading] = useState(true);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(fullscreen);
 
   // Lazy init when the wrapper enters the viewport
   useEffect(() => {
+    if (fullscreen) { setVisible(true); return; }
     if (!wrapperRef.current) return;
     if (typeof IntersectionObserver === "undefined") {
       setVisible(true);
@@ -419,7 +421,7 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
     );
     io.observe(wrapperRef.current);
     return () => io.disconnect();
-  }, []);
+  }, [fullscreen]);
 
   useEffect(() => {
     if (!visible || !containerRef.current) return;
@@ -432,6 +434,10 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
 
     const computeSize = () => {
       const w = containerRef.current?.clientWidth || 800;
+      if (fullscreen) {
+        const h = containerRef.current?.clientHeight || 600;
+        return { w, h: Math.max(360, h) };
+      }
       const isMobile = w < 640;
       return { w, h: isMobile ? 380 : 560 };
     };
@@ -643,26 +649,47 @@ export function GeoGebraBlock({ data }: { data: GeoGebraData }) {
       ro.disconnect();
       if (containerRef.current) containerRef.current.innerHTML = "";
     };
-  }, [data.code, data.dim, visible]);
+  }, [data.code, data.dim, visible, fullscreen]);
+
+  if (fullscreen) {
+    return (
+      <div ref={wrapperRef} className="w-full h-full flex flex-col">
+        <div className="relative flex-1 min-h-0 w-full overflow-hidden rounded-xl" style={{ background: "#FFFFFF" }}>
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40 animate-pulse z-10 pointer-events-none">
+              <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+              <p className="text-xs text-muted-foreground">Préparation de la figure…</p>
+            </div>
+          )}
+          <div ref={containerRef} className="w-full h-full ggb-container" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div ref={wrapperRef} className="my-4 p-3 rounded-2xl border border-border bg-card shadow-lg ggb-wrapper">
-      {data.title && (
-        <h4 className="text-base font-semibold text-foreground mb-3 text-center tracking-tight">{data.title}</h4>
-      )}
-      <div className="relative w-full overflow-hidden rounded-xl" style={{ background: "#FFFFFF" }}>
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40 animate-pulse z-10 pointer-events-none" style={{ minHeight: 320 }}>
-            <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-            <p className="text-xs text-muted-foreground">Préparation de la figure…</p>
-          </div>
+    <ZoomableFigure
+      title={data.title}
+      renderZoomed={(open) => (open ? <GeoGebraBlock data={data} fullscreen /> : null)}
+    >
+      <div ref={wrapperRef} className="my-4 p-3 rounded-2xl border border-border bg-card shadow-lg ggb-wrapper">
+        {data.title && (
+          <h4 className="text-base font-semibold text-foreground mb-3 text-center tracking-tight">{data.title}</h4>
         )}
-        <div ref={containerRef} className="w-full ggb-container" style={{ minHeight: 320 }} />
+        <div className="relative w-full overflow-hidden rounded-xl" style={{ background: "#FFFFFF" }}>
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40 animate-pulse z-10 pointer-events-none" style={{ minHeight: 320 }}>
+              <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+              <p className="text-xs text-muted-foreground">Préparation de la figure…</p>
+            </div>
+          )}
+          <div ref={containerRef} className="w-full ggb-container" style={{ minHeight: 320 }} />
+        </div>
+        <p className="text-[11px] text-muted-foreground text-center mt-2">
+          {is3DLabel(data.dim)}
+        </p>
       </div>
-      <p className="text-[11px] text-muted-foreground text-center mt-2">
-        {is3DLabel(data.dim)}
-      </p>
-    </div>
+    </ZoomableFigure>
   );
 }
 
