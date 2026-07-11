@@ -1,8 +1,9 @@
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { ZoomableFigure } from "./ZoomableFigure";
 
 /* ── Types ── */
 
@@ -95,34 +96,69 @@ export function parseChartBlocks(text: string): ParsedPart[] {
 /* ── Function Plot (GeoGebra-style) ── */
 
 export function FunctionPlotBlock({ graph }: { graph: GraphData }) {
+  return (
+    <ZoomableFigure
+      title={graph.title}
+      renderZoomed={(open) => (open ? <PlotSurface graph={graph} fullscreen /> : null)}
+    >
+      <div className="my-4 p-4 rounded-xl border border-border bg-background">
+        {graph.title && (
+          <h4 className="text-sm font-semibold text-foreground mb-3 text-center">{graph.title}</h4>
+        )}
+        <PlotSurface graph={graph} />
+        {graph.functions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2 justify-center">
+            {graph.functions.map((fn, i) => (
+              <span key={i} className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground font-mono">
+                {fn}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </ZoomableFigure>
+  );
+}
+
+function PlotSurface({ graph, fullscreen = false }: { graph: GraphData; fullscreen?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current || !graph.functions?.length) return;
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const update = () => {
+      const w = el.clientWidth || 320;
+      const h = fullscreen
+        ? Math.max(320, el.clientHeight || 480)
+        : Math.min(Math.max(240, Math.round(window.innerHeight * 0.55)), 480);
+      setSize({ w, h });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [fullscreen]);
 
-    // Dynamic import to avoid SSR issues
+  useEffect(() => {
+    if (!containerRef.current || !graph.functions?.length || !size) return;
+    let cancelled = false;
     import("function-plot").then((mod) => {
+      if (cancelled || !containerRef.current) return;
       const functionPlot = mod.default;
-      if (!containerRef.current) return;
-
-      // Clear previous render
       containerRef.current.innerHTML = "";
-
       const colors = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c", "#0891b2"];
-
       try {
         functionPlot({
           target: containerRef.current,
-          width: containerRef.current.clientWidth,
-          height: 340,
-          xAxis: {
-            label: "x",
-            domain: graph.xDomain || [-10, 10],
-          },
-          yAxis: {
-            label: "y",
-            domain: graph.yDomain || [-10, 10],
-          },
+          width: size.w,
+          height: size.h,
+          xAxis: { label: "x", domain: graph.xDomain || [-10, 10] },
+          yAxis: { label: "y", domain: graph.yDomain || [-10, 10] },
           grid: true,
           data: graph.functions.map((fn, i) => ({
             fn,
@@ -135,24 +171,15 @@ export function FunctionPlotBlock({ graph }: { graph: GraphData }) {
         containerRef.current.innerHTML = `<p style="color:red;font-size:0.85rem;padding:1rem;">Erreur de tracé : expression invalide</p>`;
       }
     });
-  }, [graph]);
+    return () => { cancelled = true; };
+  }, [graph, size]);
 
   return (
-    <div className="my-4 p-4 rounded-xl border border-border bg-background">
-      {graph.title && (
-        <h4 className="text-sm font-semibold text-foreground mb-3 text-center">{graph.title}</h4>
-      )}
-      <div ref={containerRef} className="w-full overflow-hidden rounded-lg" />
-      {graph.functions.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2 justify-center">
-          {graph.functions.map((fn, i) => (
-            <span key={i} className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground font-mono">
-              {fn}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
+    <div
+      ref={containerRef}
+      className="w-full overflow-hidden rounded-lg"
+      style={fullscreen ? { height: "100%" } : undefined}
+    />
   );
 }
 
@@ -167,15 +194,28 @@ export function ChartBlock({ chart }: { chart: ChartData }) {
     }
   }, [chart.type]);
 
+  const height = typeof window !== "undefined"
+    ? Math.min(Math.max(240, Math.round(window.innerHeight * 0.5)), 420)
+    : 320;
+
   return (
-    <div className="my-4 p-4 rounded-xl border border-border bg-background">
-      {chart.title && (
-        <h4 className="text-sm font-semibold text-foreground mb-3 text-center">{chart.title}</h4>
+    <ZoomableFigure
+      title={chart.title}
+      renderZoomed={() => (
+        <ResponsiveContainer width="100%" height="100%">
+          <ChartComponent chart={chart} />
+        </ResponsiveContainer>
       )}
-      <ResponsiveContainer width="100%" height={260}>
-        <ChartComponent chart={chart} />
-      </ResponsiveContainer>
-    </div>
+    >
+      <div className="my-4 p-4 rounded-xl border border-border bg-background">
+        {chart.title && (
+          <h4 className="text-sm font-semibold text-foreground mb-3 text-center">{chart.title}</h4>
+        )}
+        <ResponsiveContainer width="100%" height={height}>
+          <ChartComponent chart={chart} />
+        </ResponsiveContainer>
+      </div>
+    </ZoomableFigure>
   );
 }
 
