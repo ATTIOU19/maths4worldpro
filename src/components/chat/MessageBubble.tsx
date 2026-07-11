@@ -45,7 +45,7 @@ export function MessageBubble({ msg, hideVisuals = false }: { msg: Msg; hideVisu
 
   return (
     <div className="flex justify-start">
-      <div className={`${hasVisual ? "max-w-[98%] md:max-w-[95%] w-full" : "max-w-[85%] md:max-w-[70%]"} px-4 py-3 chat-bubble-ai`}>
+      <div className={`${hasVisual ? "max-w-full w-full md:max-w-[95%]" : "max-w-[85%] md:max-w-[70%]"} px-4 py-3 chat-bubble-ai`}>
         {parts.map((part, i) => (
           <div key={i}>
             {part.before && (
