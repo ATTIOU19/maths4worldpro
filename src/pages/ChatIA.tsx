@@ -87,6 +87,7 @@ const ChatIA = () => {
   const [loading, setLoading] = useState(false);
   const [attached, setAttached] = useState<AttachedFile | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -149,7 +150,7 @@ const ChatIA = () => {
         </div>
         {messages.length > 0 && (
           <>
-            <ExportMenu title="Conversation Chat IA" messages={messages} baseFilename="chat-ia" />
+            <ExportMenu title="Conversation Chat IA" messages={messages} baseFilename="chat-ia" containerRef={listRef} />
             <button
               onClick={() => setMessages([])}
               className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
@@ -162,7 +163,7 @@ const ChatIA = () => {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -186,7 +187,9 @@ const ChatIA = () => {
           </div>
         ) : (
           messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} />
+            <div key={i} data-export-msg="true">
+              <MessageBubble msg={msg} />
+            </div>
           ))
         )}
 

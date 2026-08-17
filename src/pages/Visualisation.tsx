@@ -88,6 +88,7 @@ const Visualisation = () => {
   const [loading, setLoading] = useState(false);
   const [attached, setAttached] = useState<AttachedFile | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (result) {
@@ -146,11 +147,9 @@ const Visualisation = () => {
           <>
             <ExportMenu
               title={`Visualisation : ${lastPrompt || ""}`}
-              messages={[
-                { role: "user", content: lastPrompt },
-                { role: "assistant", content: result.content },
-              ]}
+              messages={[{ role: "assistant", content: result.content }]}
               baseFilename="visualisation"
+              containerRef={exportRef}
             />
             <button
               onClick={() => setResult(null)}
@@ -164,7 +163,7 @@ const Visualisation = () => {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={exportRef} className="flex-1 overflow-y-auto px-4 py-6">
         {!result && !loading ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -199,7 +198,7 @@ const Visualisation = () => {
               </div>
             )}
             {result && (
-              <div ref={resultRef}>
+              <div ref={resultRef} data-export-msg="true">
                 <MessageBubble msg={result} />
               </div>
             )}
