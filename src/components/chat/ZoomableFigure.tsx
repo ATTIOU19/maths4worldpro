@@ -22,6 +22,7 @@ export function ZoomableFigure({
         aria-label="Agrandir"
         title="Agrandir"
         onClick={() => setOpen(true)}
+        data-export-ignore="true"
         className="absolute top-2 right-2 z-20 p-2 rounded-lg bg-background/80 hover:bg-background border border-border shadow-sm backdrop-blur transition-colors"
       >
         <Maximize2 size={16} className="text-foreground" />
