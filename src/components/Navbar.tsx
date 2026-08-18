@@ -1,20 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Globe, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo-maths4world.jpeg";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
+import { useLanguage, LANGUAGES } from "@/i18n";
 
 const navLinks = [
-  { label: "Accueil", to: "/" },
-  { label: "Chat IA", to: "/chat" },
-  { label: "Visualisation", to: "/visualisation" },
-  { label: "Tuteur IA", to: "/tuteur-ia" },
-  { label: "Entretien Vocal", to: "/entretien-vocal" },
-  { label: "Maths Métier", to: "/maths-metier" },
-  { label: "À propos", to: "/a-propos" },
+  { key: "nav.home", to: "/" },
+  { key: "nav.chat", to: "/chat" },
+  { key: "nav.viz", to: "/visualisation" },
+  { key: "nav.tutor", to: "/tuteur-ia" },
+  { key: "nav.interview", to: "/entretien-vocal" },
+  { key: "nav.jobs", to: "/maths-metier" },
+  { key: "nav.about", to: "/a-propos" },
 ];
 
 const PUBLIC_PATHS = new Set(["/"]);
@@ -24,6 +25,8 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const { lang, setLang, t } = useLanguage();
+  const [langOpen, setLangOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
@@ -60,24 +63,49 @@ const Navbar = () => {
               key={link.to}
               to={link.to}
               onClick={(e) => handleNavClick(e, link.to)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 location.pathname === link.to
                   ? "bg-primary-foreground/15 text-primary-foreground"
                   : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
               }`}
             >
-              {link.label}
+              {t(link.key)}
             </Link>
           ))}
         </div>
 
         <div className="hidden md:flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setLangOpen((o) => !o)}
+              aria-label={t("nav.language")}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors"
+            >
+              <Globe size={16} />
+              <span className="uppercase">{lang}</span>
+            </button>
+            {langOpen && (
+              <div className="absolute right-0 mt-2 w-44 rounded-xl bg-card border border-border shadow-card py-1 z-50">
+                {LANGUAGES.map((l) => (
+                  <button
+                    key={l.code}
+                    onClick={() => { setLang(l.code); setLangOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                  >
+                    <span>{l.flag}</span>
+                    <span className="flex-1 text-left">{l.label}</span>
+                    {lang === l.code && <Check size={14} className="text-secondary" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {isAuthed ? (
             <button
               onClick={handleLogout}
               className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:brightness-110 transition-all duration-200 shadow-hero"
             >
-              Se déconnecter
+              {t("nav.logout")}
             </button>
           ) : (
             <>
@@ -85,13 +113,13 @@ const Navbar = () => {
                 to="/connexion"
                 className="px-4 py-2 text-primary-foreground/80 hover:text-primary-foreground text-sm font-medium transition-colors"
               >
-                Connexion
+                {t("nav.login")}
               </Link>
               <Link
                 to="/inscription"
                 className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:brightness-110 transition-all duration-200 shadow-hero"
               >
-                S'inscrire
+                {t("nav.signup")}
               </Link>
             </>
           )}
@@ -125,15 +153,35 @@ const Navbar = () => {
                       : "text-primary-foreground/70"
                   }`}
                 >
-                  {link.label}
+                  {t(link.key)}
                 </Link>
               ))}
+              <div className="mt-2 border-t border-primary-foreground/10 pt-3">
+                <div className="flex items-center gap-2 text-primary-foreground/50 text-xs font-semibold uppercase tracking-wider mb-2">
+                  <Globe size={14} /> {t("nav.language")}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => setLang(l.code)}
+                      className={`px-3 py-2 rounded-lg text-sm ${
+                        lang === l.code
+                          ? "bg-secondary text-secondary-foreground font-semibold"
+                          : "bg-primary-foreground/10 text-primary-foreground/80"
+                      }`}
+                    >
+                      {l.flag} {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {isAuthed ? (
                 <button
                   onClick={() => { setMobileOpen(false); handleLogout(); }}
                   className="mt-2 px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
                 >
-                  Se déconnecter
+                  {t("nav.logout")}
                 </button>
               ) : (
                 <>
@@ -142,14 +190,14 @@ const Navbar = () => {
                     onClick={() => setMobileOpen(false)}
                     className="mt-2 px-5 py-3 border border-primary-foreground/20 text-primary-foreground rounded-lg text-sm font-semibold text-center"
                   >
-                    Connexion
+                    {t("nav.login")}
                   </Link>
                   <Link
                     to="/inscription"
                     onClick={() => setMobileOpen(false)}
                     className="px-5 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold text-center"
                   >
-                    S'inscrire
+                    {t("nav.signup")}
                   </Link>
                 </>
               )}
