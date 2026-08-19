@@ -272,6 +272,15 @@ const yo: Dict = {
 
 const DICTS: Record<LangCode, Dict> = { fr, en, pt, ar, yo };
 
+// Namespace dictionaries: each file in ./ns exports
+// `default` as Record<LangCode, Dict> and is merged here.
+const nsModules = import.meta.glob<{ default: Record<LangCode, Dict> }>("./ns/*.ts", { eager: true });
+for (const mod of Object.values(nsModules)) {
+  for (const code of Object.keys(DICTS) as LangCode[]) {
+    Object.assign(DICTS[code], mod.default?.[code] ?? {});
+  }
+}
+
 type Ctx = { lang: LangCode; setLang: (l: LangCode) => void; t: (k: string) => string };
 const LanguageContext = createContext<Ctx>({ lang: "fr", setLang: () => {}, t: (k) => k });
 
