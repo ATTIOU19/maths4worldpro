@@ -6,32 +6,7 @@ import Footer from "@/components/Footer";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
 import { useEffect, useState } from "react";
-
-const features = [
-  {
-    icon: MessageSquare,
-    title: "Tuteur Socratique IA",
-    desc: "Pose ta question en français. L'IA te guide étape par étape sans donner la réponse directement.",
-  },
-  {
-    icon: Sparkles,
-    title: "Réponse Visuelle Automatique",
-    desc: "Chaque explication génère automatiquement le graphique ou schéma correspondant.",
-  },
-  {
-    icon: Globe,
-    title: "Exemples Africains Contextualisés",
-    desc: "Les maths illustrées avec des réalités africaines : marchés, agriculture, tontines, ingénierie.",
-  },
-];
-
-const steps = [
-  { icon: MessageSquare, title: "Tu poses ta question en français", num: "01" },
-  { icon: Sparkles, title: "L'IA génère l'explication + le visuel", num: "02" },
-  { icon: Mic, title: "Tu t'entraînes à l'oral et valides ta maîtrise", num: "03" },
-];
-
-const TYPE_WORDS = ["mathématiques", "dérivées", "intégrales", "probabilités"];
+import { useT } from "@/i18n";
 
 const useTypewriter = (words: string[], speed = 90, pause = 1600) => {
   const [text, setText] = useState("");
@@ -60,14 +35,30 @@ const useTypewriter = (words: string[], speed = 90, pause = 1600) => {
   return text;
 };
 
-const demoMessages = [
-  { role: "user", text: "Qu'est-ce que la dérivée de x² ?" },
-  { role: "ai", text: "Excellente question ! Que sais-tu déjà sur la règle n·xⁿ⁻¹ ?" },
-  { role: "user", text: "On multiplie par l'exposant et on baisse de 1." },
-  { role: "ai", text: "Parfait ! Donc pour x², on obtient 2x. Regarde le graphique →" },
-];
-
 const Index = () => {
+  const t = useT();
+
+  const features = [
+    { icon: MessageSquare, title: t("home.f1.title"), desc: t("home.f1.desc") },
+    { icon: Sparkles, title: t("home.f2.title"), desc: t("home.f2.desc") },
+    { icon: Globe, title: t("home.f3.title"), desc: t("home.f3.desc") },
+  ];
+
+  const steps = [
+    { icon: MessageSquare, title: t("home.s1"), num: "01" },
+    { icon: Sparkles, title: t("home.s2"), num: "02" },
+    { icon: Mic, title: t("home.s3"), num: "03" },
+  ];
+
+  const TYPE_WORDS = [t("home.word1"), t("home.word2"), t("home.word3"), t("home.word4")];
+
+  const demoMessages = [
+    { role: "user", text: t("home.d1") },
+    { role: "ai", text: t("home.d2") },
+    { role: "user", text: t("home.d3") },
+    { role: "ai", text: t("home.d4") },
+  ];
+
   const word = useTypewriter(TYPE_WORDS);
 
   return (
@@ -92,11 +83,11 @@ const Index = () => {
               className="pulse-glow inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/20 border border-secondary/30 text-primary-foreground text-xs font-semibold mb-6 backdrop-blur-sm"
             >
               <Zap size={14} className="text-secondary" />
-              Nouvelle génération de tuteur IA
+              {t("home.badge")}
             </motion.span>
 
             <h1 className="text-4xl md:text-6xl font-extrabold text-primary-foreground leading-tight mb-6">
-              L'intelligence artificielle qui enseigne les{" "}
+              {t("home.h1")}{" "}
               <span className="text-gradient-primary bg-clip-text" style={{ backgroundImage: "linear-gradient(135deg, hsl(204 100% 75%), hsl(191 100% 70%))" }}>
                 {word}
                 <span className="caret" />
@@ -121,13 +112,13 @@ const Index = () => {
                 to="/tuteur-ia"
                 className="btn-shine inline-flex items-center gap-2 px-8 py-4 bg-secondary text-secondary-foreground rounded-xl text-base font-semibold hover:scale-[1.03] hover:shadow-hero transition-all duration-300"
               >
-                Essayer le Tuteur IA <ArrowRight size={18} />
+                {t("home.cta1")} <ArrowRight size={18} />
               </Link>
               <Link
                 to="/maths-metier"
                 className="btn-shine inline-flex items-center gap-2 px-8 py-4 border-2 border-primary-foreground/30 text-primary-foreground rounded-xl text-base font-semibold hover:bg-primary-foreground/10 transition-all duration-300"
               >
-                Voir le module Maths Métier <ArrowRight size={18} />
+                {t("home.cta2")} <ArrowRight size={18} />
               </Link>
             </div>
           </motion.div>
@@ -171,7 +162,7 @@ const Index = () => {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            Comment ça marche ?
+            {t("home.how")}
           </motion.h2>
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 max-w-4xl mx-auto">
             {steps.map((s, i) => (
@@ -186,7 +177,7 @@ const Index = () => {
                 <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-hero">
                   <s.icon size={28} className="text-primary-foreground" />
                 </div>
-                <span className="text-xs font-bold text-secondary mb-2">ÉTAPE {s.num}</span>
+                <span className="text-xs font-bold text-secondary mb-2">{t("home.step")} {s.num}</span>
                 <p className="text-sm font-medium text-foreground">{s.title}</p>
                 {i < steps.length - 1 && (
                   <ArrowRight className="text-muted-foreground mt-4 hidden md:block" size={20} />
@@ -207,8 +198,8 @@ const Index = () => {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-3">Aperçu en direct</h2>
-            <p className="text-muted-foreground">Voici à quoi ressemble une session avec Amara</p>
+            <h2 className="text-3xl font-bold text-foreground mb-3">{t("home.preview")}</h2>
+            <p className="text-muted-foreground">{t("home.previewSub")}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
@@ -224,10 +215,10 @@ const Index = () => {
                   <Bot size={18} className="text-accent-foreground" />
                 </div>
                 <div>
-                  <div className="font-semibold text-card-foreground text-sm">Amara · Tuteur IA</div>
+                  <div className="font-semibold text-card-foreground text-sm">{t("home.tutorLabel")}</div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-success" />
-                    <span className="text-xs text-success">En ligne</span>
+                    <span className="text-xs text-success">{t("home.online")}</span>
                   </div>
                 </div>
               </div>
@@ -272,7 +263,7 @@ const Index = () => {
               className="bg-card rounded-2xl shadow-card p-6 border border-border flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="font-semibold text-card-foreground text-sm">Visualisation : f(x) = x²</div>
+                <div className="font-semibold text-card-foreground text-sm">{t("home.vizLabel")}</div>
                 <Sparkles size={16} className="text-secondary" />
               </div>
               <div className="flex-1 flex items-center justify-center">
@@ -311,7 +302,7 @@ const Index = () => {
                 to="/visualisation"
                 className="btn-shine mt-4 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all"
               >
-                Essayer maintenant <ArrowRight size={14} />
+                {t("home.tryNow")} <ArrowRight size={14} />
               </Link>
             </motion.div>
           </div>
@@ -331,7 +322,7 @@ const Index = () => {
               <div className="text-4xl md:text-5xl font-extrabold text-primary-foreground mb-2">
                 <AnimatedCounter end={50} />
               </div>
-              <p className="text-primary-foreground/60 text-sm">outils analysés — aucun ne fait ce que nous faisons</p>
+              <p className="text-primary-foreground/60 text-sm">{t("home.stat1")}</p>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -342,7 +333,7 @@ const Index = () => {
               <div className="text-4xl md:text-5xl font-extrabold text-primary-foreground mb-2">
                 <AnimatedCounter end={400} suffix="M" />
               </div>
-              <p className="text-primary-foreground/60 text-sm">de francophones africains non couverts</p>
+              <p className="text-primary-foreground/60 text-sm">{t("home.stat2")}</p>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -353,7 +344,7 @@ const Index = () => {
               <div className="text-4xl md:text-5xl font-extrabold text-secondary mb-2">
                 <AnimatedCounter end={7} suffix=",7 Mds $" />
               </div>
-              <p className="text-primary-foreground/60 text-sm">marché EdTech africain en 2033</p>
+              <p className="text-primary-foreground/60 text-sm">{t("home.stat3")}</p>
             </motion.div>
           </div>
         </div>

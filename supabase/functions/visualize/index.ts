@@ -6,13 +6,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+
+const LANG_NAMES: Record<string, string> = {
+  fr: "français",
+  en: "anglais (English)",
+  pt: "portugais (Português)",
+  ar: "arabe (العربية)",
+  yo: "yoruba (Yorùbá)",
+};
+const langInstruction = (lang?: string) => {
+  const name = LANG_NAMES[lang ?? "fr"] ?? LANG_NAMES.fr;
+  return `\n\n**LANGUE DE RÉPONSE — RÈGLE ABSOLUE :** réponds TOUJOURS et UNIQUEMENT en ${name}, quelle que soit la langue de la question. Tous tes textes, titres, questions et bilans doivent être dans cette langue (les formules mathématiques restent en notation standard).`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { prompt, fileContext } = await req.json();
+    const { prompt, fileContext, lang } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -167,7 +180,7 @@ AUCUN autre texte. Réponds en français.`;
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: systemPrompt + langInstruction(lang) },
             { role: "user", content: userContent },
           ],
           stream: true,

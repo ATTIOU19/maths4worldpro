@@ -6,13 +6,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+
+const LANG_NAMES: Record<string, string> = {
+  fr: "français",
+  en: "anglais (English)",
+  pt: "portugais (Português)",
+  ar: "arabe (العربية)",
+  yo: "yoruba (Yorùbá)",
+};
+const langInstruction = (lang?: string) => {
+  const name = LANG_NAMES[lang ?? "fr"] ?? LANG_NAMES.fr;
+  return `\n\n**LANGUE DE RÉPONSE — RÈGLE ABSOLUE :** réponds TOUJOURS et UNIQUEMENT en ${name}, quelle que soit la langue de la question. Tous tes textes, titres, questions et bilans doivent être dans cette langue (les formules mathématiques restent en notation standard).`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, fileContext, tutorMode } = await req.json();
+    const { messages, fileContext, tutorMode, lang } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -129,7 +142,7 @@ Tu dois TOUJOURS utiliser GeoGebra (et UNIQUEMENT GeoGebra) pour les figures et 
 - Si l'utilisateur pose lui-même une question, réponds-y clairement avant de reprendre le fil.
 - Adopte un ton chaleureux et tutoie l'utilisateur.`;
 
-    const finalSystemPrompt = tutorMode ? systemPrompt + tutorAddendum : systemPrompt;
+    const finalSystemPrompt = (tutorMode ? systemPrompt + tutorAddendum : systemPrompt) + langInstruction(lang);
 
     const messagesWithContext = fileContext
       ? [
