@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import AuthBackgroundVideo from "@/components/AuthBackgroundVideo";
+import { useT } from "@/i18n";
 
 const Connexion = () => {
   const navigate = useNavigate();
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +20,7 @@ const Connexion = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({ title: "Erreur", description: "Veuillez remplir tous les champs.", variant: "destructive" });
+      toast({ title: t("auth.error"), description: t("auth.fillAllFields"), variant: "destructive" });
       return;
     }
 
@@ -27,9 +29,9 @@ const Connexion = () => {
     setLoading(false);
 
     if (error) {
-      toast({ title: "Erreur de connexion", description: error.message, variant: "destructive" });
+      toast({ title: t("auth.login.errorTitle"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Bienvenue !", description: "Connexion réussie." });
+      toast({ title: t("auth.login.welcomeTitle"), description: t("auth.login.successDesc") });
       navigate("/");
     }
   };
@@ -45,23 +47,23 @@ const Connexion = () => {
             </div>
             <span className="text-white font-bold text-xl">MATHS4WORLD</span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-4">Se connecter</h1>
-          <p className="text-white/70 mt-1">Accédez à votre espace Maths4World</p>
+          <h1 className="text-2xl font-bold text-white mt-4">{t("auth.login.title")}</h1>
+          <p className="text-white/70 mt-1">{t("auth.login.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="amina@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input id="email" type="email" placeholder={t("auth.emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder={t("auth.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -77,19 +79,19 @@ const Connexion = () => {
 
           <div className="text-right">
             <Link to="/mot-de-passe-oublie" className="text-sm text-primary hover:underline">
-              Mot de passe oublié ?
+              {t("auth.login.forgotPassword")}
             </Link>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
             <LogIn size={18} />
-            {loading ? "Connexion…" : "Se connecter"}
+            {loading ? t("auth.login.submitLoading") : t("auth.login.submit")}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Pas encore de compte ?{" "}
+            {t("auth.login.noAccount")}{" "}
             <Link to="/inscription" className="text-primary font-medium hover:underline">
-              S'inscrire
+              {t("auth.login.signupLink")}
             </Link>
           </p>
         </form>

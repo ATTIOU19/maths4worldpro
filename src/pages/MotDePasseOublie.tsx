@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Mail, ArrowLeft } from "lucide-react";
 import AuthBackgroundVideo from "@/components/AuthBackgroundVideo";
+import { useT } from "@/i18n";
 
 const MotDePasseOublie = () => {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -16,7 +18,7 @@ const MotDePasseOublie = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast({ title: "Erreur", description: "Veuillez saisir votre email.", variant: "destructive" });
+      toast({ title: t("auth.error"), description: t("auth.forgot.enterEmail"), variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -26,10 +28,10 @@ const MotDePasseOublie = () => {
     setLoading(false);
 
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: t("auth.error"), description: error.message, variant: "destructive" });
     } else {
       setSent(true);
-      toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception." });
+      toast({ title: t("auth.forgot.emailSentTitle"), description: t("auth.forgot.emailSentDesc") });
     }
   };
 
@@ -44,8 +46,8 @@ const MotDePasseOublie = () => {
             </div>
             <span className="text-white font-bold text-xl">MATHS4WORLD</span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-4">Mot de passe oublié</h1>
-          <p className="text-white/70 mt-1">Recevez un lien de réinitialisation par email</p>
+          <h1 className="text-2xl font-bold text-white mt-4">{t("auth.forgot.title")}</h1>
+          <p className="text-white/70 mt-1">{t("auth.forgot.subtitle")}</p>
         </div>
 
         {sent ? (
@@ -53,29 +55,29 @@ const MotDePasseOublie = () => {
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <Mail className="text-primary" size={26} />
             </div>
-            <h2 className="text-lg font-semibold text-card-foreground">Vérifiez votre email</h2>
+            <h2 className="text-lg font-semibold text-card-foreground">{t("auth.forgot.checkEmailTitle")}</h2>
             <p className="text-sm text-muted-foreground">
-              Si un compte est associé à <span className="font-medium text-foreground">{email}</span>, vous recevrez un lien pour réinitialiser votre mot de passe.
+              {t("auth.forgot.checkEmailDesc")} <span className="font-medium text-foreground">{email}</span>{t("auth.forgot.checkEmailDescEnd")}
             </p>
             <Link to="/connexion" className="inline-flex items-center gap-2 text-primary font-medium hover:underline text-sm">
-              <ArrowLeft size={16} /> Retour à la connexion
+              <ArrowLeft size={16} /> {t("auth.forgot.backToLogin")}
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="amina@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="email">{t("auth.email")}</Label>
+              <Input id="email" type="email" placeholder={t("auth.emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
               <Mail size={18} />
-              {loading ? "Envoi…" : "Envoyer le lien"}
+              {loading ? t("auth.forgot.submitLoading") : t("auth.forgot.submit")}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
               <Link to="/connexion" className="inline-flex items-center gap-1 text-primary font-medium hover:underline">
-                <ArrowLeft size={14} /> Retour à la connexion
+                <ArrowLeft size={14} /> {t("auth.forgot.backToLogin")}
               </Link>
             </p>
           </form>

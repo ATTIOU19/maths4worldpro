@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { KeyRound, Eye, EyeOff } from "lucide-react";
 import AuthBackgroundVideo from "@/components/AuthBackgroundVideo";
+import { useT } from "@/i18n";
 
 const ReinitialiserMotDePasse = () => {
   const navigate = useNavigate();
+  const t = useT();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,11 +33,11 @@ const ReinitialiserMotDePasse = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) {
-      toast({ title: "Mot de passe trop court", description: "Au moins 6 caractères.", variant: "destructive" });
+      toast({ title: t("auth.reset.tooShortTitle"), description: t("auth.reset.tooShortDesc"), variant: "destructive" });
       return;
     }
     if (password !== confirm) {
-      toast({ title: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      toast({ title: t("auth.reset.mismatchTitle"), variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -43,9 +45,9 @@ const ReinitialiserMotDePasse = () => {
     setLoading(false);
 
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: t("auth.error"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Mot de passe mis à jour", description: "Vous êtes connecté." });
+      toast({ title: t("auth.reset.successTitle"), description: t("auth.reset.successDesc") });
       navigate("/");
     }
   };
@@ -61,24 +63,24 @@ const ReinitialiserMotDePasse = () => {
             </div>
             <span className="text-white font-bold text-xl">MATHS4WORLD</span>
           </Link>
-          <h1 className="text-2xl font-bold text-white mt-4">Nouveau mot de passe</h1>
-          <p className="text-white/70 mt-1">Choisissez un mot de passe sécurisé</p>
+          <h1 className="text-2xl font-bold text-white mt-4">{t("auth.reset.title")}</h1>
+          <p className="text-white/70 mt-1">{t("auth.reset.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
           {!ready && (
             <p className="text-xs text-muted-foreground text-center">
-              Validation du lien en cours… Si rien ne se passe, redemandez un email depuis « Mot de passe oublié ».
+              {t("auth.reset.validating")}
             </p>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="password">Nouveau mot de passe</Label>
+            <Label htmlFor="password">{t("auth.reset.newPassword")}</Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder={t("auth.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -93,11 +95,11 @@ const ReinitialiserMotDePasse = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm">Confirmer le mot de passe</Label>
+            <Label htmlFor="confirm">{t("auth.reset.confirmPassword")}</Label>
             <Input
               id="confirm"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
+              placeholder={t("auth.passwordPlaceholder")}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
@@ -105,7 +107,7 @@ const ReinitialiserMotDePasse = () => {
 
           <Button type="submit" className="w-full" disabled={loading || !ready}>
             <KeyRound size={18} />
-            {loading ? "Mise à jour…" : "Mettre à jour"}
+            {loading ? t("auth.reset.submitLoading") : t("auth.reset.submit")}
           </Button>
         </form>
       </div>
