@@ -7,28 +7,26 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
 import { ExportMenu } from "@/components/chat/ExportMenu";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
+import { useLanguage } from "@/i18n";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const VIZ_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/visualize`;
 
-const SUGGESTIONS = [
-  "Trace la courbe de f(x) = e^(x²)",
-  "Visualise sin(x) et cos(x) sur [-2π, 2π]",
-  "Histogramme des 10 premiers nombres premiers",
-  "Courbe de la fonction ln(x)",
-  "Compare x², x³ et √x sur [0, 5]",
-  "Aire sous la courbe de f(x) = x² entre 0 et 3",
-];
+const SUGGESTION_KEYS = ["viz.s1", "viz.s2", "viz.s3", "viz.s4", "viz.s5", "viz.s6"];
 
 async function streamVisualize({
   prompt,
   fileContext,
+  lang,
+  t,
   onDelta,
   onDone,
 }: {
   prompt: string;
   fileContext?: string;
+  lang: string;
+  t: (k: string) => string;
   onDelta: (t: string) => void;
   onDone: () => void;
 }) {
@@ -38,15 +36,15 @@ async function streamVisualize({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ prompt, fileContext }),
+    body: JSON.stringify({ prompt, fileContext, lang }),
   });
 
   if (resp.status === 429) {
-    toast({ title: "Limite atteinte", description: "Trop de requêtes, réessayez dans un moment.", variant: "destructive" });
+    toast({ title: t("err.rate.title"), description: t("err.rate.desc"), variant: "destructive" });
     throw new Error("rate limited");
   }
   if (resp.status === 402) {
-    toast({ title: "Crédits épuisés", description: "Les crédits IA sont épuisés.", variant: "destructive" });
+    toast({ title: t("err.credits.title"), description: t("err.credits.desc"), variant: "destructive" });
     throw new Error("payment required");
   }
   if (!resp.ok || !resp.body) throw new Error("stream error");
@@ -82,6 +80,7 @@ async function streamVisualize({
 }
 
 const Visualisation = () => {
+  const { lang, t } = useLanguage();
   const [result, setResult] = useState<Msg | null>(null);
   const [lastPrompt, setLastPrompt] = useState<string>("");
   const [input, setInput] = useState("");
@@ -115,6 +114,8 @@ const Visualisation = () => {
       await streamVisualize({
         prompt: text.trim(),
         fileContext: fileCtx,
+        lang,
+        t,
         onDelta: update,
         onDone: () => setLoading(false),
       });
@@ -140,13 +141,13 @@ const Visualisation = () => {
           <BarChart3 size={16} className="text-secondary-foreground" />
         </div>
         <div className="flex-1">
-          <h1 className="font-bold text-sm">Visualisation IA</h1>
-          <p className="text-xs opacity-70">Décris ce que tu veux visualiser</p>
+          <h1 className="font-bold text-sm">{t("viz.title")}</h1>
+          <p className="text-xs opacity-70">{t("viz.sub")}</p>
         </div>
         {result && (
           <>
             <ExportMenu
-              title={`Visualisation : ${lastPrompt || ""}`}
+              title={`${t("viz.exportTitle")} : ${lastPrompt || ""}`}
               messages={[{ role: "assistant", content: result.content }]}
               baseFilename="visualisation"
               containerRef={exportRef}
@@ -154,7 +155,7 @@ const Visualisation = () => {
             <button
               onClick={() => setResult(null)}
               className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
-              title="Effacer"
+              title={t("viz.clear")}
             >
               <Trash2 size={18} />
             </button>
@@ -169,18 +170,18 @@ const Visualisation = () => {
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
               <BarChart3 size={28} className="text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">Visualisation instantanée 📊</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">{t("viz.h2")}</h2>
             <p className="text-muted-foreground text-sm max-w-md mb-8">
-              Décris la courbe, le graphique ou le diagramme que tu veux voir. L'IA le génère avec tous les détails en un instant.
+              {t("viz.intro")}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
-              {SUGGESTIONS.map((s) => (
+              {SUGGESTION_KEYS.map((k) => (
                 <button
-                  key={s}
-                  onClick={() => generate(s)}
+                  key={k}
+                  onClick={() => generate(t(k))}
                   className="text-left px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted text-sm text-foreground transition-colors"
                 >
-                  {s}
+                  {t(k)}
                 </button>
               ))}
             </div>
@@ -193,7 +194,7 @@ const Visualisation = () => {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
                     <Sparkles size={24} className="text-primary" />
                   </div>
-                  <p className="text-sm text-muted-foreground">Génération en cours…</p>
+                  <p className="text-sm text-muted-foreground">{t("viz.generating")}</p>
                 </div>
               </div>
             )}
@@ -219,7 +220,7 @@ const Visualisation = () => {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ex : Trace la courbe de f(x) = sin(x) × e^(-x)…"
+            placeholder={t("viz.placeholder")}
             className="flex-1 h-11 rounded-xl border border-input bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             disabled={loading}
           />

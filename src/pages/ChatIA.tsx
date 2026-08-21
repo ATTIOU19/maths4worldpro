@@ -7,28 +7,26 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { FileUpload, type AttachedFile } from "@/components/chat/FileUpload";
 import { ExportMenu } from "@/components/chat/ExportMenu";
 import MathSymbolsBackground from "@/components/MathSymbolsBackground";
+import { useLanguage } from "@/i18n";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/math-chat`;
 
-const SUGGESTIONS = [
-  "Comment résoudre une équation du second degré ?",
-  "Explique-moi les limites de fonctions",
-  "C'est quoi une matrice et à quoi ça sert ?",
-  "Comment calculer l'aire d'un cercle ?",
-  "Dérivée de sin(x) × ln(x) ?",
-  "Les probabilités conditionnelles expliquées simplement",
-];
+const SUGGESTION_KEYS = ["chat.s1", "chat.s2", "chat.s3", "chat.s4", "chat.s5", "chat.s6"];
 
 async function streamChat({
   messages,
   fileContext,
+  lang,
+  t,
   onDelta,
   onDone,
 }: {
   messages: Msg[];
   fileContext?: string;
+  lang: string;
+  t: (k: string) => string;
   onDelta: (t: string) => void;
   onDone: () => void;
 }) {
@@ -38,15 +36,15 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, fileContext }),
+    body: JSON.stringify({ messages, fileContext, lang }),
   });
 
   if (resp.status === 429) {
-    toast({ title: "Limite atteinte", description: "Trop de requêtes, réessayez dans un moment.", variant: "destructive" });
+    toast({ title: t("err.rate.title"), description: t("err.rate.desc"), variant: "destructive" });
     throw new Error("rate limited");
   }
   if (resp.status === 402) {
-    toast({ title: "Crédits épuisés", description: "Les crédits IA sont épuisés.", variant: "destructive" });
+    toast({ title: t("err.credits.title"), description: t("err.credits.desc"), variant: "destructive" });
     throw new Error("payment required");
   }
   if (!resp.ok || !resp.body) throw new Error("stream error");
@@ -82,6 +80,7 @@ async function streamChat({
 }
 
 const ChatIA = () => {
+  const { lang, t } = useLanguage();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -120,6 +119,8 @@ const ChatIA = () => {
       await streamChat({
         messages: updated,
         fileContext: fileCtx,
+        lang,
+        t,
         onDelta: upsert,
         onDone: () => setLoading(false),
       });
@@ -145,16 +146,16 @@ const ChatIA = () => {
           <Sparkles size={16} className="text-secondary-foreground" />
         </div>
         <div className="flex-1">
-          <h1 className="font-bold text-sm">Amara — Tutrice IA</h1>
-          <p className="text-xs opacity-70">Pose ta question de maths</p>
+          <h1 className="font-bold text-sm">{t("chat.title")}</h1>
+          <p className="text-xs opacity-70">{t("chat.sub")}</p>
         </div>
         {messages.length > 0 && (
           <>
-            <ExportMenu title="Conversation Chat IA" messages={messages} baseFilename="chat-ia" containerRef={listRef} />
+            <ExportMenu title={t("chat.exportTitle")} messages={messages} baseFilename="chat-ia" containerRef={listRef} />
             <button
               onClick={() => setMessages([])}
               className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
-              title="Nouvelle conversation"
+              title={t("chat.new")}
             >
               <Trash2 size={18} />
             </button>
@@ -169,18 +170,18 @@ const ChatIA = () => {
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
               <Sparkles size={28} className="text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">Salut ! Je suis Amara 👋</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">{t("chat.greet")}</h2>
             <p className="text-muted-foreground text-sm max-w-md mb-8">
-              Ta tutrice IA en mathématiques. Pose-moi n'importe quelle question et je t'expliquerai avec des exemples concrets.
+              {t("chat.intro")}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
-              {SUGGESTIONS.map((s) => (
+              {SUGGESTION_KEYS.map((k) => (
                 <button
-                  key={s}
-                  onClick={() => send(s)}
+                  key={k}
+                  onClick={() => send(t(k))}
                   className="text-left px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted text-sm text-foreground transition-colors"
                 >
-                  {s}
+                  {t(k)}
                 </button>
               ))}
             </div>
@@ -220,7 +221,7 @@ const ChatIA = () => {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Pose ta question de maths…"
+            placeholder={t("chat.placeholder")}
             className="flex-1 h-11 rounded-xl border border-input bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             disabled={loading}
           />
